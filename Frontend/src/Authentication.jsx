@@ -72,5 +72,5 @@ export default function Authentication() {
         </button>
       </div>
     </div>
-  );
+  );  
 }
