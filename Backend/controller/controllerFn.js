@@ -6,7 +6,7 @@ export const fetchChats = async(req,res)=>{
     try {
         const Chats = await message.find({})                                        // DB QUERY
         res.status(200).json({success:true, message:Chats})
-        console.log(Chats)
+        // console.log(Chats)
     } catch (error) {
         console.log(" error while fetching "+error.message)
         res.status(500).json({success: false, message :"ur missing some feild"})

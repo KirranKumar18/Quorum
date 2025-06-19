@@ -18,7 +18,7 @@ const io = new Server(server, {
   }
 });
 
-app.use(express.json());
+app.use(express.json());               // makes it ez to parse json from POST req        [ middleware ]
 app.use(cors());
 
 connectDB();

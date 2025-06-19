@@ -1,9 +1,8 @@
-
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { io } from "socket.io-client";
-import { useLocation } from 'react-router-dom';
-import './HomePage.css'; // Import your CSS file
+import imageCompression from 'browser-image-compression';
+
 
 const socket = io("http://localhost:5000");
 
@@ -14,18 +13,37 @@ function extractChats(response) {
 function HomePage() {
   const [chats, setChats] = useState([]);
   const [inputMessage, setInputMessage] = useState("");
+  const [Base64Img ,setBase64Img]= useState('');
   
-  const User = localStorage.getItem("Username");
+  const User= localStorage.getItem("Username");
   
-  const handleImage = function(e) {
-    const file = e.target.files[0];
-    if (file) {
-      console.log("Image selected:", file.name);
-      // Handle image upload logic here
-    }
+const handleImage = async function(event) {
+  const file = event.target.files[0];
+  if (!file) return;
 
-    
+  const options = {
+    maxSizeMB: 0.2,             // Max size ~200KB
+    maxWidthOrHeight: 500,      // Resize dimensions
+    useWebWorker: true,
+  };
+
+  try {
+    const compressedFile = await imageCompression(file, options);
+    const reader = new FileReader();
+
+    reader.onloadend = () => {
+      const Base64 = reader.result;
+      setBase64Img(Base64);                                     
+      console.log("Base64 Image String:", Base64Img);
+    };
+
+    reader.readAsDataURL(compressedFile);
+  } catch (error) {
+    console.error("Image compression failed:", error);
   }
+};
+
+
 
   // gets the data from the database
   useEffect(() => {
@@ -38,6 +56,7 @@ function HomePage() {
         console.error("Error fetching chats:", err);
       }
     };
+
     fetchChats();
   }, []);
 
@@ -46,6 +65,7 @@ function HomePage() {
     socket.on("newMessage", (newMsg) => {
       setChats((prevChats) => [...prevChats, newMsg]);
     });
+
     return () => {
       socket.off("newMessage");
     };
@@ -53,12 +73,12 @@ function HomePage() {
 
   const handleSend = async () => {
     if (inputMessage.trim() === "") return;
-    
+
     const payload = {
       Grpid: "group123",
       Sender: User,
       Message: inputMessage,
-      image: "abc"
+      image: Base64Img
     };
 
     try {
@@ -70,68 +90,29 @@ function HomePage() {
   };
 
   return (
+    <div>
+      <h2>Chat Messages</h2>
+      <ul>
+        {chats.map((chat, index) => (
+          <li key={index}>
+            <strong>{chat.Sender}:</strong> {chat.Message}
+          </li>
+        ))}
+      </ul>
+      
+   
+      <input
+        type="text"
+        value={inputMessage}
+        placeholder="Enter your message"
+        onChange={(e) => setInputMessage(e.target.value)}
+         onKeyDown={(e) => e.key === "Enter" && handleSend()}
+      />
 
-    <>
-    <div className="chat-container">
-      <div className="chat-header">
-        <h2>Chat Messages</h2>
-      </div>
+<input type="file"  accept="image/*" onChange={handleImage}/>
       
-      <div className="messages-container">
-        {chats.length === 0 ? (
-          <div className="empty-state">
-            <p>No messages yet. Start the conversation!</p>
-          </div>
-        ) : (
-          <ul className="messages-list">
-            {chats.map((chat, index) => (
-              <li 
-                key={index} 
-                className={`message-item ${chat.Sender === User ? 'message-own' : 'message-other'}`}
-              >
-                <div className="message-sender">{chat.Sender}</div>
-                <p className="message-text">{chat.Message}</p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-      
-      <div className="input-container">
-        <div className="input-row">
-          <input
-            type="text"
-            className="message-input"
-            value={inputMessage}
-            placeholder="Type your message..."
-            onChange={(e) => setInputMessage(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSend()}
-          />
-          
-          <div className="file-input-wrapper">
-            <input 
-              type="file" 
-              id="file-input"
-              className="file-input"
-              accept="image/*" 
-              onChange={handleImage}
-            />
-            <label htmlFor="file-input" className="file-input-label" title="Attach image"></label>
-          </div>
-          
-          <button 
-            className="send-button"
-            onClick={handleSend}
-            disabled={inputMessage.trim() === ""}
-          >
-            Send
-          </button>
-        </div>
-      </div>
+      <button onClick={handleSend}>Send Message</button>
     </div>
-
-    </>
-    
   );
 }
 
