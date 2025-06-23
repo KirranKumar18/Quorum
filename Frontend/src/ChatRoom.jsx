@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { io } from "socket.io-client";
 import imageCompression from 'browser-image-compression';
+import './ChatRoom.css'
+import { supabase } from "./Supabase"; 
 
 
 const socket = io("http://localhost:5000");
@@ -14,8 +16,28 @@ function ChatRoom() {
   const [chats, setChats] = useState([]);
   const [inputMessage, setInputMessage] = useState("");
   const [Base64Img ,setBase64Img]= useState('');
+  const [User, setUser] = useState('guest');
   
-  const User= localStorage.getItem("Username");
+  useEffect( () => {
+    
+   const fetchUser = async () => {
+    const { data: { user }, error } = await supabase.auth.getUser()
+
+    if (error) {
+      console.error('Error:', error.message)
+      return
+    }
+
+    setUser(user?.user_metadata?.display_name)
+    console.log('Display Name:', User)
+
+   
+  }
+
+  fetchUser()
+
+
+},[]);
   
 const handleImage = async function(event) {
   const file = event.target.files[0];

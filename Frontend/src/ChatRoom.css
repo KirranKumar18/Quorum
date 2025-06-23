@@ -1,0 +1,11 @@
+li,h2{
+    color: white;
+}
+button {
+    background-color: hsl(var(--quorum-purple));
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+}

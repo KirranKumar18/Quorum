@@ -8,6 +8,8 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import ChatRoom from "./ChatRoom";
 import Authentication from "./Authentication";
+import SignupForm from "./SignupForm";
+import LoginForm from "./LoginForm";
 
 const queryClient = new QueryClient();
 
@@ -18,9 +20,11 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Authentication />} />
-          <Route path="/index" element={<Index />} />
-          <Route path="/Chatroom" element={<ChatRoom />} /> 
+          <Route path="/" element={<Index />} />
+          <Route path="/signup" element={<SignupForm />} /> 
+          <Route path="/login" element={<LoginForm />} /> 
+          <Route path="/auth" element={<Authentication />} />
+          <Route path="/chatroom" element={<ChatRoom />} /> 
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

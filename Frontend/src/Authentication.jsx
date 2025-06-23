@@ -37,7 +37,7 @@ export default function Authentication() {
 
         <h2>{mode === 'signup' ? 'Sign Up' : 'Login'}</h2>
 
-        <p> Username</p>
+        
         <input className='auth-input' 
         type='text'
         placeholder='Enter Username'
@@ -45,7 +45,7 @@ export default function Authentication() {
         onChange={(e)=>{setUsername(e.target.value)}}
         />
         
-        <p> E-Mail</p>
+       
         <input
           type="email"
           placeholder="Email"
@@ -54,7 +54,7 @@ export default function Authentication() {
           className="auth-input"
         />
 
-        <p>Password</p>
+        
         <input
           type="password"
           placeholder="Password"
