@@ -10,6 +10,7 @@ import ChatRoom from "./ChatRoom";
 import Authentication from "./Authentication";
 import SignupForm from "./SignupForm";
 import LoginForm from "./LoginForm";
+import Homepage from "./Homepage";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/signup" element={<SignupForm />} /> 
           <Route path="/login" element={<LoginForm />} /> 
           <Route path="/auth" element={<Authentication />} />
+          <Route path='/Dashboard' element={<Homepage />} />
           <Route path="/chatroom" element={<ChatRoom />} /> 
           <Route path="*" element={<NotFound />} />
         </Routes>
