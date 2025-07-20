@@ -51,6 +51,7 @@ const SignupForm = () => {
           setErrorMessage(error.message);
         } else {
           alert('Login successful!');
+          // call the api 
           navigate('/chatroom');
         }
       }

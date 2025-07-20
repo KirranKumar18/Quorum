@@ -40,7 +40,6 @@ const LoginForm = () => {
         } 
         else{
           console.log(user.id)
-            
             navigate('/chatroom')  
         }
         

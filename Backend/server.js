@@ -9,7 +9,7 @@ import { Server } from 'socket.io';
 dotenv.config();
 
 const app = express();
-const server = http.createServer(app); //   wrap Express app with HTTP server
+const server = http.createServer(app); //   wrap Express app with HTTP server 
 
 const io = new Server(server, {
   cors: {

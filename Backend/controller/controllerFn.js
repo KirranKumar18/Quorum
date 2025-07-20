@@ -1,10 +1,7 @@
 import message from "../config/model/messages.js";
 import Users from "../config/model/users.js";
-import { supabase } from "../../Frontend/src/Supabase.js"
-// import React from "react";
-// import { useState } from "react";
+import supabase  from "../supabase.js"
 
-// const [userState,setuserState] = useState('user_ABC')
 
 export const fetchChats = async(req,res)=>{
 
@@ -48,48 +45,68 @@ if (!messageBody.Grpid || !messageBody.Sender || !messageBody.Message || !messag
 }   
  /*                                         *******************************                          */
 export const updateMetadata = async (req, res) => {
-    
-    // get data from supabase [ AUTHENTICATOIN ]
-    try{
-        const { data: users, error} = await supabase.from('user_profiles').select('id')
-        if(error){
-            console.error("there was an error",error)
-            res.status(500).json({success: false, message: "Error fetching user data"})
-        }
-        else{
-            console.log("Users data retrived !!")
-            const userIds = users.map(user => user.id)
-            //console.log("User IDs:", userIds)
-           // res.status(200).json({success: true, data: users, ids: userIds})
-            
-        }
-    }
-    catch(error){ 
-            console.error("an error occured",error)
-            res.status(500).json({success: false, message: "Server error"})
-    }
-
-    //  now make METADATA in mongodb using the data from supabase
-
     try {
+        // Get email from request body
+        const { email } = req.body;
         
+        if (!email) {
+            return res.status(400).json({success: false, message: "Email is required in request body"});
+        }
+
+        // Direct query to get user from Supabase auth table by email
+        const { data: users, error} = await supabase.auth.admin.listUsers()
+        
+        if(error){
+            console.error("Error fetching users from auth:", error);
+            return res.status(500).json({success: false, message:"Error fetching users from auth", error: error.message})
+        }
+        
+        // Filter for the specific user by email (now dynamic)
+        const targetUser = users.users.find(user => user.email === email);
+        
+        if(!targetUser) {
+            return res.status(404).json({success: false, message: `User with email ${email} not found`});
+        }
+
+        console.log("User found:", targetUser);
+
+        // Check if user metadata already exists
+        const existingUser = await Users.findOne({ uid: targetUser.id });
+        if (existingUser) {
+            return res.status(409).json({
+                success: false, 
+                message: "Metadata already exists for this user",
+                data: existingUser
+            });
+        }
+
+        // Create metadata for the specific user
         const metaData = {
-             uid: "kirran",
+            uid: targetUser.id,
             grp_In:[{
-            groupId: "ABC grp",
-            role:"admin"
+                groupId: "ABC grp",
+                role:"admin"
             },{
-            groupId: "XYZ grp",
-            role:"member"
+                groupId: "XYZ grp",
+                role:"member"
             }]
         }
+        
         const MD = new Users(metaData)
         await MD.save()
-        res.status(201).json({status:"succes",message: metaData})
-        console.log(metaData)
+        console.log(`Metadata saved for user: ${targetUser.id} (${email})`);
 
+        res.status(201).json({
+            success: true, 
+            message: "Metadata created successfully", 
+            data: metaData,
+            userEmail: targetUser.email,
+            userId: targetUser.id
+        });
 
     } catch (error) {
-        console.error("it didnt work ",error)
+        console.error("Error in updateMetadata:", error)
+        res.status(500).json({success: false, message: "Server error", error: error.message})
     }
 }
+ 
