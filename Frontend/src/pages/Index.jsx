@@ -1,9 +1,10 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, MessageCircle, Shield, Zap } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-800">
       {/* Header */}
@@ -16,8 +17,12 @@ const Index = () => {
             <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">Quorum</h1>
           </div>
           <div className="space-x-4">
-            <Button variant="outline" className="hover-scale border-blue-400 text-blue-300 hover:bg-blue-950">Sign In</Button>
-            <Button className="hover-scale bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">Sign Up</Button>
+            <Button variant="outline" className="hover-scale border-blue-400 text-blue-300 hover:bg-blue-950" onClick={()=>{navigate('./login')}}>Sign In</Button>
+            <Button className="hover-scale bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+              onClick={() => navigate("/signup")}
+            >
+              Sign Up
+            </Button>
           </div>
         </nav>
       </header>
@@ -26,7 +31,7 @@ const Index = () => {
       <section className="container mx-auto px-4 py-16 text-center">
         <div className="max-w-4xl mx-auto animate-fade-in" style={{animationDelay: '0.2s'}}>
           <h2 className="text-5xl font-bold text-white mb-6 animate-scale-in">
-            Connect Through Meaningful
+            Connect Through Meaningful 
             <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent"> Group Conversations</span>
           </h2>
           <p className="text-xl text-gray-300 mb-8 leading-relaxed animate-fade-in" style={{animationDelay: '0.4s'}}>

@@ -13,7 +13,7 @@ const server = http.createServer(app); //   wrap Express app with HTTP server
 
 const io = new Server(server, {
   cors: {
-    origin: 'http://localhost:8080', //  Allow your frontend
+    origin: 'http://localhost:8081', //  Allow your frontend
     methods: ['GET', 'POST']
   }
 });
@@ -41,3 +41,4 @@ app.set('io', io);
 server.listen(5000, () => {
   console.log('Server with socket.io running on http://localhost:5000');
 });
+ 
