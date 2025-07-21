@@ -21,7 +21,6 @@ function ChatRoom() {
   const [TheUser, setTheUser] = useState('Guest');
   const [userMetadata, setUserMetadata] = useState(null);
   const [showNewGroupModal, setShowNewGroupModal] = useState(false);
-  const [showGroupInfo, setShowGroupInfo] = useState(false);
   const [newGroupData, setNewGroupData] = useState({
     groupName: '',
     members: '',
@@ -43,44 +42,6 @@ function ChatRoom() {
     // First try to get metadata from localStorage
     const storedMetadata = localStorage.getItem('userMetadata');
     
-    // Get current user from Supabase
-    const getCurrentUser = async () => {
-      try {
-        const { data: { user }, error } = await supabase.auth.getUser();
-        
-        if (error) {
-          console.error("Error fetching Supabase user:", error);
-          return;
-        }
-        
-        if (user) {
-          console.log("Current Supabase user:", user);
-          
-          // Fetch user profile data to get display name
-          const { data, error: profileError } = await supabase
-            .from('profiles')
-            .select('full_name, username')
-            .eq('id', user.id)
-            .single();
-            
-          if (profileError) {
-            console.error("Error fetching user profile:", profileError);
-          } else if (data) {
-            console.log("User profile data:", data);
-            // Use full_name if available, otherwise username, otherwise email
-            const displayName = data.full_name || data.username || user.email;
-            setTheUser(displayName);
-            console.log("Set user display name to:", displayName);
-          }
-        }
-      } catch (err) {
-        console.error("Error in getCurrentUser:", err);
-      }
-    };
-    
-    // Call the function to get current user
-    getCurrentUser();
-    
     if (storedMetadata) {
       try {
         const parsedMetadata = JSON.parse(storedMetadata);
@@ -91,7 +52,7 @@ function ChatRoom() {
         if (parsedMetadata.grp_In && parsedMetadata.grp_In.length > 0) {
           const groups = parsedMetadata.grp_In.map(group => ({
             id: group.groupId,
-            name: group.groupName || group.groupId, // Use groupName if available, otherwise use groupId
+            name: group.groupId, // Assuming groupId is also the name for now
             role: group.role
           }));
           setUserGroups(groups);
@@ -130,7 +91,7 @@ function ChatRoom() {
         if (metadata.grp_In && metadata.grp_In.length > 0) {
           const groups = metadata.grp_In.map(group => ({
             id: group.groupId,
-            name: group.groupName || group.groupId,
+            name: group.groupId,
             role: group.role
           }));
           setUserGroups(groups);
@@ -149,15 +110,10 @@ function ChatRoom() {
         return false;
       }
       
-      // Create new group data with enhanced details
+      // Create new group data
       const newGroupEntry = {
         groupId: newGroup.id,
-        groupName: newGroup.name,
-        role: "admin", // Creator is admin by default
-        createdAt: newGroup.createdAt,
-        createdBy: newGroup.createdBy,
-        members: newGroup.members,
-        saveChats: newGroup.saveChats
+        role: "admin" // Creator is admin by default
       };
       
       // Create updated metadata
@@ -217,14 +173,12 @@ function ChatRoom() {
       // Generate a unique group ID
       const groupId = `group_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
       
-      // Create new group object with more details
+      // Create new group object
       const newGroup = {
         id: groupId,
         name: newGroupData.groupName,
         members: newGroupData.members.split(',').map(m => m.trim()).filter(m => m),
-        saveChats: newGroupData.saveChats,
-        createdBy: TheUser,
-        createdAt: new Date().toISOString()
+        saveChats: newGroupData.saveChats
       };
       
       // First, add the group to user metadata in database
@@ -253,52 +207,8 @@ function ChatRoom() {
       alert("Error creating group. Please try again.");
     }
   };
-  // Function to get current group details from metadata
-  const getCurrentGroupDetails = () => {
-    if (!userMetadata || !userMetadata.grp_In || userMetadata.grp_In.length === 0) {
-      return null;
-    }
-    
-    const currentGroup = userMetadata.grp_In.find(group => group.groupId === selectedGroup);
-    return currentGroup || null;
-  };
   
-  // Render group info component
-  const GroupInfoPanel = () => {
-    const groupDetails = getCurrentGroupDetails();
-    
-    if (!groupDetails) {
-      return <div className="group-info-panel">
-        <h3>{selectedGroupName}</h3>
-        <p>No additional information available</p>
-      </div>;
-    }
-    
-    return (
-      <div className="group-info-panel">
-        <h3>{groupDetails.groupName || groupDetails.groupId}</h3>
-        {groupDetails.createdBy && (
-          <p>Created by: {groupDetails.createdBy}</p>
-        )}
-        {groupDetails.createdAt && (
-          <p>Created: {new Date(groupDetails.createdAt).toLocaleDateString()}</p>
-        )}
-        {groupDetails.members && groupDetails.members.length > 0 && (
-          <div>
-            <p>Members:</p>
-            <ul>
-              {groupDetails.members.map((member, index) => (
-                <li key={index}>{member}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-        <p>Your role: {groupDetails.role || 'member'}</p>
-      </div>
-    );
-  };
-  
-  const handleImage = async function(event) {
+const handleImage = async function(event) {
   const file = event.target.files[0];
   if (!file) return;
 
@@ -351,10 +261,8 @@ function ChatRoom() {
     });
 
     socket.on("newMessage", (newMsg) => {
-      // Only add messages for the currently selected group
-      if (newMsg.Grpid === selectedGroup) {
-        setChats((prevChats) => [...prevChats, newMsg]);
-      }
+    
+      setChats((prevChats) => [...prevChats, newMsg]);
     });
 
     return () => {
@@ -362,19 +270,16 @@ function ChatRoom() {
       socket.off("disconnect");
       socket.off("newMessage");
     };
-  }, [selectedGroup]);
+  }, []);
 
   const handleSend = async () => {
-    if (inputMessage.trim() === "" && !Base64Img) {
-      // Don't send if both message and image are empty
-      return;
-    }
+    if (inputMessage.trim() === "") return;
 
     const payload = {
       Grpid: selectedGroup,
-      Sender: TheUser,                                   // Use the display name from Supabase
+      Sender: "User",                                   // now fixing this
       Message: inputMessage,
-      image: Base64Img || ''  // Ensure image is never undefined
+      image: Base64Img
     };
 
     try {
@@ -389,8 +294,6 @@ function ChatRoom() {
   const handleGroupSelect = (groupId, groupName) => {
     setSelectedGroup(groupId);
     setSelectedGroupName(groupName);
-    // Clear current chat messages when changing groups
-    setChats([]);
   };
 
   const handleNewGroupClick = () => {
@@ -445,13 +348,7 @@ function ChatRoom() {
         <div className="chat-header">
           <div className="group-avatar"></div>
           <span className="group-name">{selectedGroupName}</span>
-          <button className="info-button" onClick={() => setShowGroupInfo(prev => !prev)}>
-            {showGroupInfo ? 'Hide Info' : 'Group Info'}
-          </button>
         </div>
-        
-        {/* Group Info Panel (conditionally rendered) */}
-        {showGroupInfo && <GroupInfoPanel />}
         
         {/* Chat Messages Area */}
         <div className="chat-messages">

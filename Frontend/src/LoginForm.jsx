@@ -20,30 +20,105 @@ const LoginForm = () => {
     // Add login logic here
   };
 
-    const handleAuth = async () => {
-    if (mode === 'signup') {
-      const { error } = await supabase.auth.signUp({ email, password });
-      
-      if (error) 
-        alert(error.message);
-      else 
-      alert('Check your email to confirm sign up!');
-    } else {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) 
-        alert(error.message);
-      else {
-        alert('Login successful!');
-        const {data:{user} , error} = await supabase.auth.getUser()
-        if(error){
-          console.log("failed to get id ",error)
-        } 
-        else{
-          console.log(user.id)
-            navigate('/chatroom')  
+  const handleAuth = async () => {
+    try {
+      if (mode === 'signup') {
+        const { data, error } = await supabase.auth.signUp({ email, password });
+        
+        if (error) {
+          alert(error.message);
+          return;
         }
         
+        // After successful signup, create user metadata in MongoDB
+        const metadataResult = await saveUserMetadata(email);
+        console.log("New user signup - Metadata created:", metadataResult?.data);
+        
+        // Store user metadata in local storage
+        if (metadataResult?.success) {
+          localStorage.setItem('userMetadata', JSON.stringify(metadataResult.data));
+          localStorage.setItem('userEmail', email);
+        }
+        
+        alert('Check your email to confirm sign up!');
+      } else {
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+          alert(error.message);
+          return;
+        }
+        
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError) {
+          console.log("Failed to get user ID:", userError);
+          return;
+        }
+        
+        console.log("User authenticated:", user.id);
+        
+        // For login, get or create user metadata and log it
+        const metadataResult = await getOrCreateUserMetadata(email);
+        console.log("User login - User metadata:", metadataResult?.data);
+        
+        // Store user metadata in local storage for easy access throughout the app
+        if (metadataResult?.success) {
+          localStorage.setItem('userMetadata', JSON.stringify(metadataResult.data));
+          localStorage.setItem('userEmail', email);
+          localStorage.setItem('userId', user.id);
+        }
+        
+        alert('Login successful!');
+        navigate('/chatroom');
       }
+    } catch (err) {
+      console.error("Authentication error:", err);
+      alert("An error occurred during authentication. Please try again.");
+    }
+  };
+  
+  // Create new metadata for new users
+  const saveUserMetadata = async (userEmail) => {
+    try {
+      // Using POST method with request body
+      const response = await fetch('http://localhost:5000/api/LoginForm', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email: userEmail, isNewUser: true })
+      });
+      
+      const data = await response.json();
+      console.log("Metadata creation response:", data);
+      
+      if (!data.success) {
+        console.warn("Metadata creation issue:", data.message);
+      }
+      
+      return data;
+    } catch (error) {
+      console.error("Error saving metadata:", error);
+    }
+  };
+  
+  // Get existing metadata or create if doesn't exist for login
+  const getOrCreateUserMetadata = async (userEmail) => {
+    try {
+      // Using POST method with request body
+      const response = await fetch('http://localhost:5000/api/LoginForm', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email: userEmail, isLogin: true })
+      });
+      
+      const data = await response.json();
+      console.log("Metadata retrieval response:", data);
+      
+      return data;
+    } catch (error) {
+      console.error("Error retrieving metadata:", error);
     }
   };
 
