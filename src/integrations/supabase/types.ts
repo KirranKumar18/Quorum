@@ -14,16 +14,147 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      group_memberships: {
+        Row: {
+          group_id: string
+          id: string
+          joined_at: string
+          user_id: string
+        }
+        Insert: {
+          group_id: string
+          id?: string
+          joined_at?: string
+          user_id: string
+        }
+        Update: {
+          group_id?: string
+          id?: string
+          joined_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_memberships_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      groups: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          group_type: Database["public"]["Enums"]["group_type"]
+          id: string
+          max_members: number | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          group_type?: Database["public"]["Enums"]["group_type"]
+          id?: string
+          max_members?: number | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          group_type?: Database["public"]["Enums"]["group_type"]
+          id?: string
+          max_members?: number | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          about_me: string | null
+          created_at: string
+          current_streak: number | null
+          id: string
+          last_activity_date: string | null
+          longest_streak: number | null
+          profile_photo_url: string | null
+          updated_at: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          about_me?: string | null
+          created_at?: string
+          current_streak?: number | null
+          id?: string
+          last_activity_date?: string | null
+          longest_streak?: number | null
+          profile_photo_url?: string | null
+          updated_at?: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          about_me?: string | null
+          created_at?: string
+          current_streak?: number | null
+          id?: string
+          last_activity_date?: string | null
+          longest_streak?: number | null
+          profile_photo_url?: string | null
+          updated_at?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      user_activities: {
+        Row: {
+          activity_date: string
+          activity_type: string | null
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          activity_date?: string
+          activity_type?: string | null
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          activity_date?: string
+          activity_type?: string | null
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      can_join_group: {
+        Args: { user_uuid: string; group_uuid: string }
+        Returns: boolean
+      }
+      update_user_streak: {
+        Args: { user_uuid: string }
+        Returns: undefined
+      }
     }
     Enums: {
-      [_ in never]: never
+      group_type: "custom" | "class"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +281,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      group_type: ["custom", "class"],
+    },
   },
 } as const
