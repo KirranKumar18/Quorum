@@ -1,224 +1,580 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { MessageCircle, Users, LogOut, Plus } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { 
+  MessageCircle, 
+  Users, 
+  Plus, 
+  User, 
+  Crown, 
+  Zap,
+  Settings,
+  Home,
+  Bell,
+  Search,
+  Sparkles,
+  Shield,
+  Calendar,
+  Activity
+} from 'lucide-react';
+import { toast } from "@/hooks/use-toast";
+
+interface Profile {
+  id: string;
+  username: string;
+  about_me: string;
+  profile_photo_url?: string;
+  current_streak: number;
+}
+
+interface Group {
+  id: string;
+  name: string;
+  description?: string;
+  group_type: 'custom' | 'class';
+  max_members: number;
+  created_by: string;
+  created_at: string;
+}
+
+interface GroupMembership {
+  id: string;
+  group: Group;
+  joined_at: string;
+}
+
+// ReactBits-inspired Dock Component
+const DockItem = ({ 
+  icon: Icon, 
+  label, 
+  active = false, 
+  onClick,
+  badge
+}: { 
+  icon: any; 
+  label: string; 
+  active?: boolean; 
+  onClick?: () => void;
+  badge?: number;
+}) => (
+  <div 
+    className={`relative group cursor-pointer transition-all duration-300 ${
+      active ? 'scale-110' : 'hover:scale-110'
+    }`}
+    onClick={onClick}
+  >
+    <div className={`
+      flex items-center justify-center w-12 h-12 rounded-2xl backdrop-blur-lg border transition-all duration-300
+      ${active 
+        ? 'bg-primary text-white border-primary/50 shadow-glow' 
+        : 'bg-background/30 text-muted-foreground border-white/10 hover:bg-primary/20 hover:text-primary hover:border-primary/30'
+      }
+    `}>
+      <Icon className="w-5 h-5" />
+      {badge && badge > 0 && (
+        <div className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-white text-xs rounded-full flex items-center justify-center font-medium">
+          {badge > 99 ? '99+' : badge}
+        </div>
+      )}
+    </div>
+    
+    {/* Tooltip */}
+    <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+      <div className="bg-background/90 backdrop-blur-sm text-foreground text-xs px-2 py-1 rounded-lg border border-white/10 whitespace-nowrap">
+        {label}
+      </div>
+    </div>
+  </div>
+);
+
+const Dock = ({ children }: { children: React.ReactNode }) => (
+  <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
+    <div className="flex items-center gap-2 px-4 py-3 bg-background/40 backdrop-blur-xl rounded-3xl border border-white/20 shadow-elegant">
+      {children}
+    </div>
+  </div>
+);
 
 const DashboardPage = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<any>(null);
-
-  // Mock groups data
-  const groups = [
-    {
-      id: 1,
-      name: "Frontend Developers",
-      description: "Discussing React, Vue, and modern web development",
-      members: 1247,
-      lastMessage: "What are your thoughts on the new React 19 features?",
-      lastActivity: "2 minutes ago",
-      unreadCount: 3
-    },
-    {
-      id: 2,
-      name: "Design Systems",
-      description: "Building consistent and scalable design languages",
-      members: 892,
-      lastMessage: "Just shared our new component library!",
-      lastActivity: "1 hour ago",
-      unreadCount: 0
-    },
-    {
-      id: 3,
-      name: "Tech News",
-      description: "Latest updates from the tech world",
-      members: 2156,
-      lastMessage: "Apple's new AI features are impressive",
-      lastActivity: "3 hours ago",
-      unreadCount: 12
-    },
-    {
-      id: 4,
-      name: "Startup Founders",
-      description: "Connecting entrepreneurs and sharing experiences",
-      members: 634,
-      lastMessage: "Looking for a technical co-founder",
-      lastActivity: "5 hours ago",
-      unreadCount: 1
-    }
-  ];
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [groups, setGroups] = useState<GroupMembership[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [createGroupOpen, setCreateGroupOpen] = useState(false);
+  const [newGroup, setNewGroup] = useState({
+    name: '',
+    description: '',
+    group_type: 'custom' as 'custom' | 'class'
+  });
 
   useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      setUser(JSON.parse(userData));
-    } else {
-      navigate('/login');
-    }
-  }, [navigate]);
+    const timer = setTimeout(() => setIsLoaded(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
+  useEffect(() => {
+    checkUserAndLoadData();
+  }, []);
+
+  const checkUserAndLoadData = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        navigate('/login');
+        return;
+      }
+
+      // Update user streak
+      await supabase.rpc('update_user_streak', { user_uuid: user.id });
+
+      // Fetch profile
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profileError) {
+        toast({
+          title: "Error",
+          description: "Failed to load profile",
+          variant: "destructive",
+        });
+      } else {
+        setProfile(profileData);
+      }
+
+      // Fetch group memberships
+      const { data: groupsData, error: groupsError } = await supabase
+        .from('group_memberships')
+        .select(`
+          id,
+          joined_at,
+          group:groups(
+            id,
+            name,
+            description,
+            group_type,
+            max_members,
+            created_by,
+            created_at
+          )
+        `)
+        .eq('user_id', user.id)
+        .order('joined_at', { ascending: false });
+
+      if (groupsError) {
+        console.error('Error fetching groups:', groupsError);
+      } else {
+        setGroups(groupsData || []);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateGroup = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: groupData, error } = await supabase
+        .from('groups')
+        .insert([{
+          name: newGroup.name,
+          description: newGroup.description,
+          group_type: newGroup.group_type,
+          created_by: user.id
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to create group",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Auto-join the creator to the group
+      await supabase
+        .from('group_memberships')
+        .insert([{
+          user_id: user.id,
+          group_id: groupData.id
+        }]);
+
+      toast({
+        title: "Success",
+        description: "Group created successfully!",
+      });
+
+      setCreateGroupOpen(false);
+      setNewGroup({ name: '', description: '', group_type: 'custom' });
+      checkUserAndLoadData(); // Refresh data
+    } catch (error) {
+      console.error('Error creating group:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create group",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     navigate('/');
   };
 
-  const enterChat = (groupId: number) => {
-    navigate(`/chat/${groupId}`);
-  };
+  const customGroups = groups.filter(g => g.group.group_type === 'custom');
+  const classGroups = groups.filter(g => g.group.group_type === 'class');
+  const canJoinCustom = customGroups.length < 2;
+  const canJoinClass = classGroups.length < 1;
+  const groupProgress = Math.min(((customGroups.length / 2) + (classGroups.length / 1)) * 100, 100);
 
-  if (!user) {
-    return <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-    </div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-primary/5 flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-secondary">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-background via-background/95 to-primary/5">
+      {/* Background Effects */}
+      <div className="absolute inset-0 opacity-30">
+        <div className="absolute top-20 left-20 w-32 h-32 bg-gradient-to-r from-primary/20 to-accent/20 rounded-full blur-3xl animate-float"></div>
+        <div className="absolute top-60 right-32 w-24 h-24 bg-gradient-to-r from-accent/20 to-primary/20 rounded-full blur-2xl animate-float" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute bottom-32 left-1/3 w-40 h-40 bg-gradient-to-r from-primary/15 to-accent/15 rounded-full blur-3xl animate-float" style={{ animationDelay: '4s' }}></div>
+      </div>
+
       {/* Header */}
-      <header className="bg-white/50 backdrop-blur-sm border-b border-white/20 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-foreground">GroupFlow</h1>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-3">
-                <Avatar className="h-10 w-10">
-                  <AvatarFallback className="bg-primary text-primary-foreground">
-                    {user.username?.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="font-semibold text-foreground">{user.username}</p>
-                  <p className="text-sm text-muted-foreground">{user.email}</p>
-                </div>
-              </div>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleLogout}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
-            </div>
+      <header className={`relative z-10 p-6 transition-all duration-700 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}>
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <div className="flex items-center gap-6">
+            <h1 className="text-3xl font-bold bg-gradient-elegant bg-clip-text text-transparent">
+              GroupSpark
+            </h1>
+            {profile && (
+              <Badge variant="outline" className="bg-background/50 backdrop-blur-sm border-primary/20">
+                <Zap className="w-3 h-3 mr-1" />
+                {profile.current_streak} day streak
+              </Badge>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              className="bg-background/50 backdrop-blur-sm border-primary/20 hover:bg-primary/10"
+              onClick={() => navigate('/profile')}
+            >
+              <User className="w-4 h-4 mr-2" />
+              Profile
+            </Button>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="relative z-10 max-w-7xl mx-auto px-6 pb-32">
         {/* Welcome Section */}
-        <div className="mb-8 animate-fade-in">
-          <h2 className="text-3xl font-bold text-foreground mb-2">
-            Welcome back, {user.username}! 👋
-          </h2>
-          <p className="text-muted-foreground text-lg">
-            Ready to dive into your group conversations?
-          </p>
+        <div className={`mb-8 transition-all duration-700 delay-200 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+          <div className="flex items-center gap-4 mb-4">
+            <Avatar className="w-16 h-16 border-2 border-primary/20">
+              <AvatarImage src={profile?.profile_photo_url} />
+              <AvatarFallback className="bg-gradient-primary text-white text-xl font-bold">
+                {profile?.username?.[0]?.toUpperCase() || 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h2 className="text-4xl font-bold text-foreground">
+                Welcome back, {profile?.username || 'User'}! 
+                <span className="ml-2">👋</span>
+              </h2>
+              <p className="text-muted-foreground text-lg">
+                Ready to spark some conversations?
+              </p>
+            </div>
+          </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
-          <Card className="bg-white/60 backdrop-blur-sm border-white/30 shadow-card animate-slide-up">
+        {/* Stats Section */}
+        <div className={`grid md:grid-cols-4 gap-6 mb-8 transition-all duration-700 delay-400 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+          <Card className="bg-background/30 backdrop-blur-lg border-white/10 shadow-elegant hover:shadow-glow transition-all duration-300">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Groups</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                Total Groups
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground">{groups.length}</div>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-white/60 backdrop-blur-sm border-white/30 shadow-card animate-slide-up" style={{ animationDelay: '0.1s' }}>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Unread Messages</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-primary">
-                {groups.reduce((total, group) => total + group.unreadCount, 0)}
+              <div className="text-3xl font-bold text-foreground">{groups.length}</div>
+              <div className="text-xs text-muted-foreground mt-1">
+                {customGroups.length} custom, {classGroups.length} class
               </div>
             </CardContent>
           </Card>
-          
-          <Card className="bg-white/60 backdrop-blur-sm border-white/30 shadow-card animate-slide-up" style={{ animationDelay: '0.2s' }}>
+
+          <Card className="bg-background/30 backdrop-blur-lg border-white/10 shadow-elegant hover:shadow-glow transition-all duration-300">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Members</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Activity className="w-4 h-4" />
+                Group Progress
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground">
-                {groups.reduce((total, group) => total + group.members, 0).toLocaleString()}
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>{Math.round(groupProgress)}%</span>
+                  <span className="text-muted-foreground">Complete</span>
+                </div>
+                <Progress value={groupProgress} className="h-2" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-background/30 backdrop-blur-lg border-white/10 shadow-elegant hover:shadow-glow transition-all duration-300">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Sparkles className="w-4 h-4" />
+                Daily Streak
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-primary">{profile?.current_streak || 0}</div>
+              <div className="text-xs text-muted-foreground mt-1">
+                days in a row
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-background/30 backdrop-blur-lg border-white/10 shadow-elegant hover:shadow-glow transition-all duration-300">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                Member Since
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm font-bold text-foreground">
+                {profile ? new Date(profile.id).toLocaleDateString('en-US', { 
+                  month: 'short', 
+                  year: 'numeric' 
+                }) : 'Unknown'}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">
+                GroupSpark user
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Groups Section */}
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-2xl font-bold text-foreground">Your Groups</h3>
-          <Button className="bg-primary hover:bg-primary/90 shadow-glow">
-            <Plus className="w-4 h-4 mr-2" />
-            Join New Group
-          </Button>
-        </div>
-
-        {/* Groups Grid */}
-        <div className="grid md:grid-cols-2 gap-6">
-          {groups.map((group, index) => (
-            <Card 
-              key={group.id} 
-              className="bg-white/60 backdrop-blur-sm border-white/30 shadow-card hover:shadow-elegant transition-all duration-300 cursor-pointer group animate-slide-up"
-              style={{ animationDelay: `${index * 0.1}s` }}
-              onClick={() => enterChat(group.id)}
-            >
-              <CardHeader>
-                <div className="flex justify-between items-start">
+        <div className={`transition-all duration-700 delay-600 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-3xl font-bold text-foreground">Your Groups</h3>
+            
+            <Dialog open={createGroupOpen} onOpenChange={setCreateGroupOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-gradient-primary text-white hover:shadow-glow transition-all duration-300 hover:scale-105">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Make Group
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-background/95 backdrop-blur-xl border-white/20">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold bg-gradient-elegant bg-clip-text text-transparent">
+                    Create New Group
+                  </DialogTitle>
+                  <DialogDescription>
+                    Start a new community and invite others to join the conversation.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
                   <div>
-                    <CardTitle className="text-xl group-hover:text-primary transition-colors">
-                      {group.name}
-                      {group.unreadCount > 0 && (
-                        <span className="ml-2 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-primary rounded-full">
-                          {group.unreadCount}
-                        </span>
-                      )}
-                    </CardTitle>
-                    <CardDescription className="mt-2">{group.description}</CardDescription>
+                    <Label htmlFor="name">Group Name</Label>
+                    <Input
+                      id="name"
+                      value={newGroup.name}
+                      onChange={(e) => setNewGroup({ ...newGroup, name: e.target.value })}
+                      placeholder="Enter group name"
+                    />
                   </div>
-                </div>
-              </CardHeader>
-              
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Users className="w-4 h-4 mr-2" />
-                    {group.members.toLocaleString()} members
+                  <div>
+                    <Label htmlFor="description">Description</Label>
+                    <Textarea
+                      id="description"
+                      value={newGroup.description}
+                      onChange={(e) => setNewGroup({ ...newGroup, description: e.target.value })}
+                      placeholder="What's this group about?"
+                    />
                   </div>
-                  
-                  <div className="bg-muted/50 rounded-lg p-3">
-                    <p className="text-sm text-foreground line-clamp-2">
-                      {group.lastMessage}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {group.lastActivity}
-                    </p>
+                  <div>
+                    <Label htmlFor="type">Group Type</Label>
+                    <Select
+                      value={newGroup.group_type}
+                      onValueChange={(value: 'custom' | 'class') => setNewGroup({ ...newGroup, group_type: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select group type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="custom" disabled={!canJoinCustom}>
+                          Custom Group {!canJoinCustom && '(Limit reached: 2/2)'}
+                        </SelectItem>
+                        <SelectItem value="class" disabled={!canJoinClass}>
+                          Class Group {!canJoinClass && '(Limit reached: 1/1)'}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  
                   <Button 
-                    className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-all"
-                    variant="outline"
+                    onClick={handleCreateGroup} 
+                    className="w-full bg-gradient-primary text-white"
+                    disabled={!newGroup.name.trim() || (!canJoinCustom && newGroup.group_type === 'custom') || (!canJoinClass && newGroup.group_type === 'class')}
                   >
-                    <MessageCircle className="w-4 h-4 mr-2" />
-                    Enter Chat
+                    Create Group
                   </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          {/* Group Limits Info */}
+          <div className="grid md:grid-cols-2 gap-4 mb-6">
+            <Card className="bg-background/20 backdrop-blur-sm border-primary/20">
+              <CardContent className="p-4">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-primary" />
+                    <span className="font-medium">Custom Groups</span>
+                  </div>
+                  <Badge variant={canJoinCustom ? "default" : "secondary"}>
+                    {customGroups.length}/2
+                  </Badge>
                 </div>
               </CardContent>
             </Card>
-          ))}
+            
+            <Card className="bg-background/20 backdrop-blur-sm border-accent/20">
+              <CardContent className="p-4">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <Crown className="w-4 h-4 text-accent" />
+                    <span className="font-medium">Class Groups</span>
+                  </div>
+                  <Badge variant={canJoinClass ? "default" : "secondary"}>
+                    {classGroups.length}/1
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Groups Grid */}
+          {groups.length === 0 ? (
+            <Card className="bg-background/30 backdrop-blur-lg border-white/10 shadow-elegant">
+              <CardContent className="p-12 text-center">
+                <Users className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
+                <h4 className="text-xl font-semibold mb-2">No Groups Yet</h4>
+                <p className="text-muted-foreground mb-6">
+                  Create your first group or join existing ones to start chatting!
+                </p>
+                <Button 
+                  onClick={() => setCreateGroupOpen(true)}
+                  className="bg-gradient-primary text-white hover:shadow-glow"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Your First Group
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {groups.map((membership, index) => (
+                <Card 
+                  key={membership.id} 
+                  className="group bg-background/30 backdrop-blur-lg border-white/10 shadow-elegant hover:shadow-glow transition-all duration-500 cursor-pointer hover:scale-105"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                  onClick={() => navigate(`/chat/${membership.group.id}`)}
+                >
+                  <CardHeader>
+                    <div className="flex justify-between items-start mb-2">
+                      <CardTitle className="text-xl group-hover:text-primary transition-colors flex items-center gap-2">
+                        {membership.group.group_type === 'class' && (
+                          <Crown className="w-5 h-5 text-accent" />
+                        )}
+                        {membership.group.name}
+                      </CardTitle>
+                      <Badge 
+                        variant={membership.group.group_type === 'class' ? 'default' : 'secondary'}
+                        className="text-xs"
+                      >
+                        {membership.group.group_type === 'class' ? 'Class' : 'Custom'}
+                      </Badge>
+                    </div>
+                    {membership.group.description && (
+                      <p className="text-muted-foreground text-sm">
+                        {membership.group.description}
+                      </p>
+                    )}
+                  </CardHeader>
+                  
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex items-center text-sm text-muted-foreground">
+                        <Calendar className="w-4 h-4 mr-2" />
+                        Joined {new Date(membership.joined_at).toLocaleDateString()}
+                      </div>
+                      
+                      <Button 
+                        className="w-full group-hover:bg-primary group-hover:text-white transition-all"
+                        variant="outline"
+                      >
+                        <MessageCircle className="w-4 h-4 mr-2" />
+                        Enter Chat
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       </main>
+
+      {/* ReactBits-inspired Dock */}
+      <Dock>
+        <DockItem icon={Home} label="Dashboard" active={true} />
+        <DockItem icon={MessageCircle} label="Chats" onClick={() => {
+          if (groups.length > 0) {
+            navigate(`/chat/${groups[0].group.id}`);
+          }
+        }} />
+        <DockItem icon={User} label="Profile" onClick={() => navigate('/profile')} />
+        <DockItem icon={Search} label="Discover" />
+        <DockItem icon={Bell} label="Notifications" badge={3} />
+        <DockItem icon={Settings} label="Settings" onClick={handleLogout} />
+      </Dock>
     </div>
   );
 };
