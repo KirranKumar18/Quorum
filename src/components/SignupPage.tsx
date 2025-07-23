@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
+import { toast } from "@/hooks/use-toast";
 
 const SignupPage = () => {
   const navigate = useNavigate();
@@ -13,6 +15,7 @@ const SignupPage = () => {
     password: ''
   });
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const steps = [
     { id: 1, title: 'Choose your username', field: 'username', placeholder: 'Enter username', type: 'text' },
@@ -22,7 +25,7 @@ const SignupPage = () => {
 
   const currentStepData = steps.find(step => step.id === currentStep);
 
-  const handleNext = () => {
+  const handleNext = async () => {
     const currentValue = formData[currentStepData?.field as keyof typeof formData];
     if (!currentValue) return;
 
@@ -33,13 +36,45 @@ const SignupPage = () => {
         setIsTransitioning(false);
       }, 200);
     } else {
-      // Handle signup completion
-      localStorage.setItem('user', JSON.stringify({
-        username: formData.username,
-        email: formData.email,
-        isLoggedIn: true
-      }));
-      navigate('/dashboard');
+      // Handle signup completion with Supabase
+      setLoading(true);
+      try {
+        const { data, error } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            data: {
+              username: formData.username,
+            }
+          }
+        });
+
+        if (error) {
+          toast({
+            title: "Signup Failed",
+            description: error.message,
+            variant: "destructive",
+          });
+          return;
+        }
+
+        if (data.user) {
+          toast({
+            title: "Success",
+            description: "Account created successfully! Please check your email for verification.",
+          });
+          navigate('/login');
+        }
+      } catch (error) {
+        console.error('Signup error:', error);
+        toast({
+          title: "Error",
+          description: "An unexpected error occurred",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -140,15 +175,19 @@ const SignupPage = () => {
 
                 <Button
                   className={`bg-white text-primary hover:bg-white/90 shadow-glow flex-1 ${
-                    !isCurrentStepValid() ? 'opacity-50 cursor-not-allowed' : ''
+                    (!isCurrentStepValid() || loading) ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
                   onClick={handleNext}
-                  disabled={!isCurrentStepValid()}
+                  disabled={!isCurrentStepValid() || loading}
                 >
                   {currentStep === 3 ? (
                     <>
-                      <Check className="w-4 h-4 mr-2" />
-                      Complete Signup
+                      {loading ? (
+                        <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin mr-2"></div>
+                      ) : (
+                        <Check className="w-4 h-4 mr-2" />
+                      )}
+                      {loading ? 'Creating Account...' : 'Complete Signup'}
                     </>
                   ) : (
                     <>

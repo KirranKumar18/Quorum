@@ -251,30 +251,30 @@ const DashboardPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-primary/5 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-background via-background/95 to-primary/5">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
       {/* Background Effects */}
       <div className="absolute inset-0 opacity-30">
-        <div className="absolute top-20 left-20 w-32 h-32 bg-gradient-to-r from-primary/20 to-accent/20 rounded-full blur-3xl animate-float"></div>
-        <div className="absolute top-60 right-32 w-24 h-24 bg-gradient-to-r from-accent/20 to-primary/20 rounded-full blur-2xl animate-float" style={{ animationDelay: '2s' }}></div>
-        <div className="absolute bottom-32 left-1/3 w-40 h-40 bg-gradient-to-r from-primary/15 to-accent/15 rounded-full blur-3xl animate-float" style={{ animationDelay: '4s' }}></div>
+        <div className="absolute top-20 left-20 w-32 h-32 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full blur-3xl animate-float"></div>
+        <div className="absolute top-60 right-32 w-24 h-24 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-full blur-2xl animate-float" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute bottom-32 left-1/3 w-40 h-40 bg-gradient-to-r from-blue-500/15 to-purple-500/15 rounded-full blur-3xl animate-float" style={{ animationDelay: '4s' }}></div>
       </div>
 
       {/* Header */}
       <header className={`relative z-10 p-6 transition-all duration-700 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}>
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-6">
-            <h1 className="text-3xl font-bold bg-gradient-elegant bg-clip-text text-transparent">
-              GroupSpark
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+              Quorum
             </h1>
             {profile && (
-              <Badge variant="outline" className="bg-background/50 backdrop-blur-sm border-primary/20">
+              <Badge variant="outline" className="bg-gray-800/50 backdrop-blur-sm border-blue-500/20 text-white">
                 <Zap className="w-3 h-3 mr-1" />
                 {profile.current_streak} day streak
               </Badge>
@@ -284,7 +284,7 @@ const DashboardPage = () => {
           <div className="flex items-center gap-4">
             <Button
               variant="outline"
-              className="bg-background/50 backdrop-blur-sm border-primary/20 hover:bg-primary/10"
+              className="bg-gray-800/50 backdrop-blur-sm border-blue-500/20 hover:bg-blue-500/10 text-white hover:text-white"
               onClick={() => navigate('/profile')}
             >
               <User className="w-4 h-4 mr-2" />
@@ -299,18 +299,18 @@ const DashboardPage = () => {
         {/* Welcome Section */}
         <div className={`mb-8 transition-all duration-700 delay-200 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           <div className="flex items-center gap-4 mb-4">
-            <Avatar className="w-16 h-16 border-2 border-primary/20">
+            <Avatar className="w-16 h-16 border-2 border-blue-500/20">
               <AvatarImage src={profile?.profile_photo_url} />
-              <AvatarFallback className="bg-gradient-primary text-white text-xl font-bold">
+              <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xl font-bold">
                 {profile?.username?.[0]?.toUpperCase() || 'U'}
               </AvatarFallback>
             </Avatar>
             <div>
-              <h2 className="text-4xl font-bold text-foreground">
+              <h2 className="text-4xl font-bold text-white">
                 Welcome back, {profile?.username || 'User'}! 
                 <span className="ml-2">👋</span>
               </h2>
-              <p className="text-muted-foreground text-lg">
+              <p className="text-gray-300 text-lg">
                 Ready to spark some conversations?
               </p>
             </div>
@@ -319,24 +319,24 @@ const DashboardPage = () => {
 
         {/* Stats Section */}
         <div className={`grid md:grid-cols-4 gap-6 mb-8 transition-all duration-700 delay-400 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-          <Card className="bg-background/30 backdrop-blur-lg border-white/10 shadow-elegant hover:shadow-glow transition-all duration-300">
+          <Card className="bg-gray-800/30 backdrop-blur-lg border-gray-700/30 shadow-xl hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <CardTitle className="text-sm font-medium text-gray-300 flex items-center gap-2">
                 <Users className="w-4 h-4" />
                 Total Groups
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-foreground">{groups.length}</div>
-              <div className="text-xs text-muted-foreground mt-1">
+              <div className="text-3xl font-bold text-white">{groups.length}</div>
+              <div className="text-xs text-gray-400 mt-1">
                 {customGroups.length} custom, {classGroups.length} class
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-background/30 backdrop-blur-lg border-white/10 shadow-elegant hover:shadow-glow transition-all duration-300">
+          <Card className="bg-gray-800/30 backdrop-blur-lg border-gray-700/30 shadow-xl hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <CardTitle className="text-sm font-medium text-gray-300 flex items-center gap-2">
                 <Activity className="w-4 h-4" />
                 Group Progress
               </CardTitle>
@@ -344,45 +344,45 @@ const DashboardPage = () => {
             <CardContent>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span>{Math.round(groupProgress)}%</span>
-                  <span className="text-muted-foreground">Complete</span>
+                  <span className="text-white">{Math.round(groupProgress)}%</span>
+                  <span className="text-gray-400">Complete</span>
                 </div>
                 <Progress value={groupProgress} className="h-2" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-background/30 backdrop-blur-lg border-white/10 shadow-elegant hover:shadow-glow transition-all duration-300">
+          <Card className="bg-gray-800/30 backdrop-blur-lg border-gray-700/30 shadow-xl hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <CardTitle className="text-sm font-medium text-gray-300 flex items-center gap-2">
                 <Sparkles className="w-4 h-4" />
                 Daily Streak
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-primary">{profile?.current_streak || 0}</div>
-              <div className="text-xs text-muted-foreground mt-1">
+              <div className="text-3xl font-bold text-blue-400">{profile?.current_streak || 0}</div>
+              <div className="text-xs text-gray-400 mt-1">
                 days in a row
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-background/30 backdrop-blur-lg border-white/10 shadow-elegant hover:shadow-glow transition-all duration-300">
+          <Card className="bg-gray-800/30 backdrop-blur-lg border-gray-700/30 shadow-xl hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <CardTitle className="text-sm font-medium text-gray-300 flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
                 Member Since
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-sm font-bold text-foreground">
+              <div className="text-sm font-bold text-white">
                 {profile ? new Date(profile.id).toLocaleDateString('en-US', { 
                   month: 'short', 
                   year: 'numeric' 
                 }) : 'Unknown'}
               </div>
-              <div className="text-xs text-muted-foreground mt-1">
-                GroupSpark user
+              <div className="text-xs text-gray-400 mt-1">
+                Quorum user
               </div>
             </CardContent>
           </Card>
@@ -391,21 +391,21 @@ const DashboardPage = () => {
         {/* Groups Section */}
         <div className={`transition-all duration-700 delay-600 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-3xl font-bold text-foreground">Your Groups</h3>
+            <h3 className="text-3xl font-bold text-white">Your Groups</h3>
             
             <Dialog open={createGroupOpen} onOpenChange={setCreateGroupOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-gradient-primary text-white hover:shadow-glow transition-all duration-300 hover:scale-105">
+                <Button className="bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-300 hover:scale-105">
                   <Plus className="w-4 h-4 mr-2" />
                   Make Group
                 </Button>
               </DialogTrigger>
-              <DialogContent className="bg-background/95 backdrop-blur-xl border-white/20">
+              <DialogContent className="bg-gray-800/95 backdrop-blur-xl border-gray-700/30 text-white">
                 <DialogHeader>
-                  <DialogTitle className="text-2xl font-bold bg-gradient-elegant bg-clip-text text-transparent">
+                  <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
                     Create New Group
                   </DialogTitle>
-                  <DialogDescription>
+                  <DialogDescription className="text-gray-300">
                     Start a new community and invite others to join the conversation.
                   </DialogDescription>
                 </DialogHeader>
@@ -492,16 +492,16 @@ const DashboardPage = () => {
 
           {/* Groups Grid */}
           {groups.length === 0 ? (
-            <Card className="bg-background/30 backdrop-blur-lg border-white/10 shadow-elegant">
+            <Card className="bg-gray-800/30 backdrop-blur-lg border-gray-700/30 shadow-xl">
               <CardContent className="p-12 text-center">
-                <Users className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
-                <h4 className="text-xl font-semibold mb-2">No Groups Yet</h4>
-                <p className="text-muted-foreground mb-6">
+                <Users className="w-16 h-16 text-gray-400/50 mx-auto mb-4" />
+                <h4 className="text-xl font-semibold mb-2 text-white">No Groups Yet</h4>
+                <p className="text-gray-400 mb-6">
                   Create your first group or join existing ones to start chatting!
                 </p>
                 <Button 
                   onClick={() => setCreateGroupOpen(true)}
-                  className="bg-gradient-primary text-white hover:shadow-glow"
+                  className="bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:shadow-lg hover:shadow-blue-500/25"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Create Your First Group
@@ -513,27 +513,31 @@ const DashboardPage = () => {
               {groups.map((membership, index) => (
                 <Card 
                   key={membership.id} 
-                  className="group bg-background/30 backdrop-blur-lg border-white/10 shadow-elegant hover:shadow-glow transition-all duration-500 cursor-pointer hover:scale-105"
+                  className="group bg-gray-800/30 backdrop-blur-lg border-gray-700/30 shadow-xl hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 cursor-pointer hover:scale-105"
                   style={{ animationDelay: `${index * 100}ms` }}
                   onClick={() => navigate(`/chat/${membership.group.id}`)}
                 >
                   <CardHeader>
                     <div className="flex justify-between items-start mb-2">
-                      <CardTitle className="text-xl group-hover:text-primary transition-colors flex items-center gap-2">
+                      <CardTitle className="text-xl text-white group-hover:text-blue-400 transition-colors flex items-center gap-2">
                         {membership.group.group_type === 'class' && (
-                          <Crown className="w-5 h-5 text-accent" />
+                          <Crown className="w-5 h-5 text-yellow-400" />
                         )}
                         {membership.group.name}
                       </CardTitle>
                       <Badge 
                         variant={membership.group.group_type === 'class' ? 'default' : 'secondary'}
-                        className="text-xs"
+                        className={`text-xs ${
+                          membership.group.group_type === 'class' 
+                            ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' 
+                            : 'bg-gray-700/50 text-gray-300 border-gray-600/50'
+                        }`}
                       >
                         {membership.group.group_type === 'class' ? 'Class' : 'Custom'}
                       </Badge>
                     </div>
                     {membership.group.description && (
-                      <p className="text-muted-foreground text-sm">
+                      <p className="text-gray-400 text-sm">
                         {membership.group.description}
                       </p>
                     )}
@@ -541,13 +545,13 @@ const DashboardPage = () => {
                   
                   <CardContent>
                     <div className="space-y-3">
-                      <div className="flex items-center text-sm text-muted-foreground">
+                      <div className="flex items-center text-sm text-gray-400">
                         <Calendar className="w-4 h-4 mr-2" />
                         Joined {new Date(membership.joined_at).toLocaleDateString()}
                       </div>
                       
                       <Button 
-                        className="w-full group-hover:bg-primary group-hover:text-white transition-all"
+                        className="w-full bg-gray-700/50 text-white hover:bg-blue-500/20 hover:text-blue-400 transition-all border border-gray-600/50 hover:border-blue-500/50"
                         variant="outline"
                       >
                         <MessageCircle className="w-4 h-4 mr-2" />

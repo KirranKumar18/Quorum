@@ -124,7 +124,7 @@ const UserProfilePage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-primary/5 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
@@ -132,15 +132,15 @@ const UserProfilePage = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Iridescence Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-background via-background/95 to-primary/5">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(120,119,198,0.1),transparent_50%)]"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.05),transparent_50%)]"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(120,119,198,0.08),transparent_50%)]"></div>
+      {/* Dark Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.1),transparent_50%)]"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(147,51,234,0.1),transparent_50%)]"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(59,130,246,0.08),transparent_50%)]"></div>
         <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-10 left-10 w-32 h-32 bg-gradient-to-r from-primary/20 to-accent/20 rounded-full blur-3xl animate-float"></div>
-          <div className="absolute top-40 right-20 w-24 h-24 bg-gradient-to-r from-accent/20 to-primary/20 rounded-full blur-2xl animate-float" style={{ animationDelay: '2s' }}></div>
-          <div className="absolute bottom-20 left-1/3 w-40 h-40 bg-gradient-to-r from-primary/15 to-accent/15 rounded-full blur-3xl animate-float" style={{ animationDelay: '4s' }}></div>
+          <div className="absolute top-10 left-10 w-32 h-32 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full blur-3xl animate-float"></div>
+          <div className="absolute top-40 right-20 w-24 h-24 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-full blur-2xl animate-float" style={{ animationDelay: '2s' }}></div>
+          <div className="absolute bottom-20 left-1/3 w-40 h-40 bg-gradient-to-r from-blue-500/15 to-purple-500/15 rounded-full blur-3xl animate-float" style={{ animationDelay: '4s' }}></div>
         </div>
       </div>
 
@@ -149,15 +149,15 @@ const UserProfilePage = () => {
         {/* Header */}
         <div className={`flex justify-between items-center mb-8 transition-all duration-700 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           <div>
-            <h1 className="text-4xl font-bold bg-gradient-elegant bg-clip-text text-transparent">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
               Profile
             </h1>
-            <p className="text-muted-foreground mt-2">Your GroupSpark journey</p>
+            <p className="text-gray-300 mt-2">Your GroupSpark journey</p>
           </div>
           <Button 
             onClick={() => navigate('/dashboard')}
             variant="outline"
-            className="bg-background/50 backdrop-blur-sm border-white/20 hover:bg-white/10"
+            className="bg-gray-800/50 backdrop-blur-sm border-gray-700/30 hover:bg-gray-700/50 text-white hover:text-white"
           >
             Back to Dashboard
           </Button>
@@ -167,39 +167,39 @@ const UserProfilePage = () => {
         <div className={`grid lg:grid-cols-3 gap-8 transition-all duration-700 delay-200 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           {/* Profile Card */}
           <div className="lg:col-span-2">
-            <Card className="bg-background/30 backdrop-blur-lg border-white/10 shadow-elegant hover:shadow-glow transition-all duration-500">
+            <Card className="bg-gray-800/30 backdrop-blur-lg border-gray-700/30 shadow-xl hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500">
               <CardHeader className="pb-4">
                 <div className="flex items-start gap-6">
                   <div className="relative">
-                    <Avatar className="w-24 h-24 border-2 border-primary/20 shadow-lg">
+                    <Avatar className="w-24 h-24 border-2 border-blue-500/20 shadow-lg">
                       <AvatarImage src={profile?.profile_photo_url} />
-                      <AvatarFallback className="bg-gradient-primary text-white text-2xl font-bold">
+                      <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-2xl font-bold">
                         {profile?.username?.[0]?.toUpperCase() || 'U'}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="absolute -bottom-2 -right-2 bg-primary rounded-full p-2 shadow-lg">
+                    <div className="absolute -bottom-2 -right-2 bg-blue-500 rounded-full p-2 shadow-lg">
                       <User className="w-4 h-4 text-white" />
                     </div>
                   </div>
                   
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <h2 className="text-3xl font-bold text-foreground">
+                      <h2 className="text-3xl font-bold text-white">
                         {profile?.username || 'Unknown User'}
                       </h2>
                       {classGroups.length > 0 && (
-                        <Badge variant="secondary" className="bg-accent/20 text-accent-foreground">
+                        <Badge variant="secondary" className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
                           <Crown className="w-3 h-3 mr-1" />
                           Class Member
                         </Badge>
                       )}
                     </div>
                     
-                    <p className="text-muted-foreground mb-4">
+                    <p className="text-gray-400 mb-4">
                       {profile?.about_me || "No description yet. Share something about yourself!"}
                     </p>
                     
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-4 text-sm text-gray-400">
                       <div className="flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
                         Joined {profile ? formatDate(profile.created_at) : 'Unknown'}
@@ -211,7 +211,7 @@ const UserProfilePage = () => {
                     </div>
                   </div>
                   
-                  <Button size="sm" variant="outline" className="bg-background/50 backdrop-blur-sm">
+                  <Button size="sm" variant="outline" className="bg-gray-700/50 backdrop-blur-sm text-white hover:text-white border-gray-600/50 hover:border-blue-500/50 hover:bg-blue-500/20">
                     <Edit className="w-4 h-4 mr-2" />
                     Edit
                   </Button>
@@ -222,9 +222,9 @@ const UserProfilePage = () => {
             {/* Stats Grid */}
             <div className="grid md:grid-cols-2 gap-6 mt-6">
               {/* Streak Card */}
-              <Card className="bg-background/30 backdrop-blur-lg border-white/10 shadow-elegant hover:shadow-glow transition-all duration-500">
+              <Card className="bg-gray-800/30 backdrop-blur-lg border-gray-700/30 shadow-xl hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-lg">
+                  <CardTitle className="flex items-center gap-2 text-lg text-white">
                     <span className="text-2xl">{getStreakEmoji(profile?.current_streak || 0)}</span>
                     Daily Streak
                   </CardTitle>
@@ -233,27 +233,27 @@ const UserProfilePage = () => {
                   <div className="space-y-4">
                     <div>
                       <div className="flex justify-between items-baseline mb-2">
-                        <span className="text-sm text-muted-foreground">Current Streak</span>
-                        <span className="text-3xl font-bold text-primary">{profile?.current_streak || 0}</span>
+                        <span className="text-sm text-gray-400">Current Streak</span>
+                        <span className="text-3xl font-bold text-blue-400">{profile?.current_streak || 0}</span>
                       </div>
-                      <div className="text-xs text-muted-foreground">days in a row</div>
+                      <div className="text-xs text-gray-400">days in a row</div>
                     </div>
                     
-                    <Separator className="bg-white/10" />
+                    <Separator className="bg-gray-700/50" />
                     
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Best Streak</span>
-                      <span className="text-lg font-semibold">{profile?.longest_streak || 0} days</span>
+                      <span className="text-sm text-gray-400">Best Streak</span>
+                      <span className="text-lg font-semibold text-white">{profile?.longest_streak || 0} days</span>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
               {/* Group Activity */}
-              <Card className="bg-background/30 backdrop-blur-lg border-white/10 shadow-elegant hover:shadow-glow transition-all duration-500">
+              <Card className="bg-gray-800/30 backdrop-blur-lg border-gray-700/30 shadow-xl hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <Users className="w-5 h-5 text-primary" />
+                  <CardTitle className="flex items-center gap-2 text-lg text-white">
+                    <Users className="w-5 h-5 text-blue-400" />
                     Group Activity
                   </CardTitle>
                 </CardHeader>
@@ -261,20 +261,20 @@ const UserProfilePage = () => {
                   <div className="space-y-4">
                     <div>
                       <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm text-muted-foreground">Progress</span>
-                        <span className="text-sm font-medium">{Math.round(groupActivity)}%</span>
+                        <span className="text-sm text-gray-400">Progress</span>
+                        <span className="text-sm font-medium text-white">{Math.round(groupActivity)}%</span>
                       </div>
                       <Progress value={groupActivity} className="h-2" />
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <div className="text-muted-foreground">Custom Groups</div>
-                        <div className="font-semibold">{customGroups.length}/2</div>
+                        <div className="text-gray-400">Custom Groups</div>
+                        <div className="font-semibold text-white">{customGroups.length}/2</div>
                       </div>
                       <div>
-                        <div className="text-muted-foreground">Class Groups</div>
-                        <div className="font-semibold">{classGroups.length}/1</div>
+                        <div className="text-gray-400">Class Groups</div>
+                        <div className="font-semibold text-white">{classGroups.length}/1</div>
                       </div>
                     </div>
                   </div>
