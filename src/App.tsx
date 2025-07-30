@@ -10,7 +10,9 @@ import DashboardPage from "./components/DashboardPage";
 import ChatPage from "./components/ChatPage";
 import GuestChatPage from "./components/GuestChatPage";
 import UserProfilePage from "./components/UserProfilePage";
+
 import NotFound from "./pages/NotFound";
+import Trial from './components/Trial'
 
 const queryClient = new QueryClient();
 
@@ -21,13 +23,16 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
+          
           <Route path="/" element={<LandingPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/profile" element={<UserProfilePage />} />
+          <Route path="/chat" element={<ChatPage />} />
           <Route path="/chat/:groupId" element={<ChatPage />} />
           <Route path="/guest-chat" element={<GuestChatPage />} />
+          
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

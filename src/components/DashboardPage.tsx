@@ -11,23 +11,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-  MessageCircle, 
-  Users, 
-  Plus, 
-  User, 
-  Crown, 
-  Zap,
-  Settings,
-  Home,
-  Bell,
-  Search,
-  Sparkles,
-  Shield,
-  Calendar,
-  Activity
-} from 'lucide-react';
+import { MessageCircle, Users, Plus, User, Crown, Zap,Settings,Home,Bell,Search,Sparkles,Shield,Calendar,Activity} from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
+import { Navigate } from 'react-router-dom';
 
 interface Profile {
   id: string;
@@ -53,7 +39,7 @@ interface GroupMembership {
   joined_at: string;
 }
 
-// ReactBits-inspired Dock Component
+// ReactBits inspired 
 const DockItem = ({ 
   icon: Icon, 
   label, 
@@ -121,10 +107,12 @@ const DashboardPage = () => {
   useEffect(() => {
     const timer = setTimeout(() => setIsLoaded(true), 100);
     return () => clearTimeout(timer);
+    
   }, []);
 
   useEffect(() => {
     checkUserAndLoadData();
+
   }, []);
 
   const checkUserAndLoadData = async () => {
@@ -154,6 +142,7 @@ const DashboardPage = () => {
         });
       } else {
         setProfile(profileData);
+        
       }
 
       // Fetch group memberships
@@ -284,7 +273,7 @@ const DashboardPage = () => {
           <div className="flex items-center gap-4">
             <Button
               variant="outline"
-              className="bg-gray-800/50 backdrop-blur-sm border-blue-500/20 hover:bg-blue-500/10 text-white hover:text-white"
+              className="bg-gray-800/50 backdrop-blur-sm border-blue-500/20 hover:bg-purple-500/100 text-white hover:text-white"
               onClick={() => navigate('/profile')}
             >
               <User className="w-4 h-4 mr-2" />
@@ -319,7 +308,7 @@ const DashboardPage = () => {
 
         {/* Stats Section */}
         <div className={`grid md:grid-cols-4 gap-6 mb-8 transition-all duration-700 delay-400 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-          <Card className="bg-gray-800/30 backdrop-blur-lg border-gray-700/30 shadow-xl hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300">
+          <Card className="bg-gray-800/30 backdrop-blur-lg border-gray-700/30 shadow-xl hover:shadow-2xl hover:shadow-red-500/100 transition-all duration-300">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-gray-300 flex items-center gap-2">
                 <Users className="w-4 h-4" />
@@ -334,7 +323,7 @@ const DashboardPage = () => {
             </CardContent>
           </Card>
 
-          <Card className="bg-gray-800/30 backdrop-blur-lg border-gray-700/30 shadow-xl hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300">
+          <Card className="bg-gray-800/30 backdrop-blur-lg border-gray-700/30 shadow-xl hover:shadow-2xl hover:shadow-blue-500/100 transition-all duration-300">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-gray-300 flex items-center gap-2">
                 <Activity className="w-4 h-4" />
@@ -352,7 +341,7 @@ const DashboardPage = () => {
             </CardContent>
           </Card>
 
-          <Card className="bg-gray-800/30 backdrop-blur-lg border-gray-700/30 shadow-xl hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300">
+          <Card className="bg-gray-800/30 backdrop-blur-lg border-gray-700/30 shadow-xl hover:shadow-2xl hover:shadow-orange-500/100 transition-all duration-300">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-gray-300 flex items-center gap-2">
                 <Sparkles className="w-4 h-4" />
@@ -572,10 +561,12 @@ const DashboardPage = () => {
         <DockItem icon={MessageCircle} label="Chats" onClick={() => {
           if (groups.length > 0) {
             navigate(`/chat/${groups[0].group.id}`);
+          } else {
+            navigate('/chat');
           }
         }} />
         <DockItem icon={User} label="Profile" onClick={() => navigate('/profile')} />
-        <DockItem icon={Search} label="Discover" />
+        <DockItem icon={Search} label="Discover" onClick={() => navigate('/trial')} />
         <DockItem icon={Bell} label="Notifications" badge={3} />
         <DockItem icon={Settings} label="Settings" onClick={handleLogout} />
       </Dock>
@@ -584,3 +575,8 @@ const DashboardPage = () => {
 };
 
 export default DashboardPage;
+
+/**
+ * url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24"><g fill="none" stroke="%236277FF" stroke-width="2"><circle cx="12" cy="12" r="8.5"></circle><path d="M1 12h5M18 12h5M12 6V1.04M12 23v-4.96M11.95 11.95h.1v.1h-.1z"></path></g></svg>')
+ * 
+ */

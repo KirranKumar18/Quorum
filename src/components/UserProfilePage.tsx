@@ -152,7 +152,7 @@ const UserProfilePage = () => {
             <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
               Profile
             </h1>
-            <p className="text-gray-300 mt-2">Your GroupSpark journey</p>
+            <p className="text-gray-300 mt-2">Your Quorum journey</p>
           </div>
           <Button 
             onClick={() => navigate('/dashboard')}
