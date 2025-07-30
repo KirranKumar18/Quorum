@@ -36,6 +36,7 @@ const ChatPage = () => {
   const [loading, setLoading] = useState(true);
   const [isLoaded, setIsLoaded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
 
   // Get user's groups from Supabase
   const fetchUserGroups = async (userId: string) => {

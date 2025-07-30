@@ -1,32 +1,26 @@
 import messageS from "./Models/Messages.js";
 import mongoose from "mongoose";
+import { getChats, postChat } from "./controller/controller.js";
 import express from "express";
+import dotenv from "dotenv";
+
+// Load environment variables
+dotenv.config();
+
+// Initialize Express app and router
 const app = express();
+const router = express.Router();
+
+// Middleware
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-app.listen(8081, () => {
-  console.log("listening on PORT 8081");
-});
+// Mount router on the app
+app.use("/api", router);
 
-app.get("/chat/:id", async (req, res) => {
-  console.log("the id is ", req.params);
-  try {
-    const msg = await messageS.find({});
-    res.status(200).json({ status: "✅", message: msg });
-  } catch (error) {
-    res.status(400).json({ status: "❌", error: error });
-  }
-});
-
-app.post("/chat/:id", async (req, res) => {
-  try {
-    const messageToBeSaved = await messageS.create(req.body);
-
-    res.status(200).json({ status: "✅", message: messageToBeSaved });
-  } catch (error) {
-    res.status(400).json({ status: "❌", error: error });
-  }
-});
+// Define routes on the router (without immediately executing the controller functions)
+router.get("/chat/:id", getChats);
+router.post("/chat/:id", postChat);
 
 // Enhanced MongoDB connection with better error handling
 const connectDB = async () => {
@@ -41,10 +35,13 @@ const connectDB = async () => {
       socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
     };
 
-    const conn = await mongoose.connect(
-      "mongodb+srv://quorumdev7:lkSZptof2lJav4TZ@cluster.jt9fb0z.mongodb.net/Chat?retryWrites=true&w=majority&appName=Cluster",
-      options
-    );
+    // Use environment variables for the connection string in production
+    // For now, we're using the direct string but this should be moved to .env
+    const MONGODB_URI =
+      process.env.MONGODB_URI ||
+      "mongodb+srv://quorumdev7:lkSZptof2lJav4TZ@cluster.jt9fb0z.mongodb.net/Chat?retryWrites=true&w=majority&appName=Cluster";
+
+    const conn = await mongoose.connect(MONGODB_URI, options);
 
     console.log("✅ MongoDB connected successfully!");
     console.log(`📍 Host: ${conn.connection.host}`);
@@ -101,5 +98,20 @@ process.on("SIGINT", async () => {
   process.exit(0);
 });
 
-// Execute the connection
-connectDB();
+// Start server only after MongoDB connects
+const startServer = async () => {
+  try {
+    await connectDB();
+
+    // Start the server
+    const PORT = process.env.PORT || 8081;
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error("Failed to start server:", error);
+  }
+};
+
+// Execute the connection and start server
+startServer();
