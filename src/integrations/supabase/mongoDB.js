@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { getChats, postChat } from "./controller/controller.js";
 import express from "express";
 import dotenv from "dotenv";
+import cors from "cors";
 
 // Load environment variables
 dotenv.config();
@@ -14,6 +15,12 @@ const router = express.Router();
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(
+  cors({
+    origin: "http://localhost:8080", // Allow only your frontend origin
+    methods: ["GET", "POST", "PUT", "DELETE"], // Allowed HTTP methods
+  })
+);
 
 // Mount router on the app
 app.use("/api", router);

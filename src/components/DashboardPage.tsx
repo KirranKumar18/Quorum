@@ -201,7 +201,6 @@ const DashboardPage = () => {
         return;
       }
 
-      // Auto-join the creator to the group
       await supabase
         .from('group_memberships')
         .insert([{
@@ -567,7 +566,7 @@ const DashboardPage = () => {
         }} />
         <DockItem icon={User} label="Profile" onClick={() => navigate('/profile')} />
         <DockItem icon={Search} label="Discover" onClick={() => navigate('/trial')} />
-        <DockItem icon={Bell} label="Notifications" badge={3} />
+        
         <DockItem icon={Settings} label="Settings" onClick={handleLogout} />
       </Dock>
     </div>

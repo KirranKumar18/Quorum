@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ArrowLeft, Send, Users, MoreVertical } from 'lucide-react';
 import { supabase } from '../integrations/supabase/client.ts';
 import { toast } from "@/hooks/use-toast";
+import axios from 'axios';
  
 interface Message {
   id: number;
@@ -15,7 +16,12 @@ interface Message {
   timestamp: string;
   isOwn: boolean;
 }
-
+interface messageS{
+  Sender: string;
+  Group: String;
+  Message:String;
+}
+ 
 interface Group {
   id: string;
   name: string;
@@ -28,11 +34,12 @@ interface Group {
 const ChatPage = () => {
   const { groupId } = useParams();
   const navigate = useNavigate();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<any>(null);                                // the Sender[messageS]
   const [message, setMessage] = useState('');
+  const [msgFromDB,setmsgFromDB] =useState<messageS[]>([])
   const [messages, setMessages] = useState<Message[]>([]);
   const [userGroups, setUserGroups] = useState<Group[]>([]);
-  const [currentGroup, setCurrentGroup] = useState<Group | null>(null);
+  const [currentGroup, setCurrentGroup] = useState<Group | null>(null);       // load this chats and the Group[messageS]
   const [loading, setLoading] = useState(true);
   const [isLoaded, setIsLoaded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -65,7 +72,7 @@ const ChatPage = () => {
       }
 
       if (data) {
-        // Transform the data and get member counts
+        // Transform the data and get member counts 
         const groupsWithCounts = await Promise.all(
           data.map(async (item) => {
             const group = item.groups;
@@ -110,7 +117,46 @@ const ChatPage = () => {
     }
   };
 
+ async function sendMessagetoDB() {
+    if (!user?.username || !currentGroup?.id || !message.trim()) {
+      console.error("Missing required data to send message");
+      return false;
+    }
+    
+    try {
+      console.log(`Sending message - User: ${user.username}, Group: ${currentGroup.name}, Message: ${message}`);
+      const response = await axios.post(`http://localhost:8081/api/chat/${currentGroup.id}`, {
+        Sender: user.username,
+        Group: currentGroup.id,
+        Message: message.trim()
+      });
+      
+      console.log("Message saved successfully:", response.data);
+      return true;
+    } catch (error) {
+      console.error("Error saving message in DB:", error);
+      toast({
+        title: "Error",
+        description: "Failed to send your message. Please try again.",
+        variant: "destructive",
+      });
+      return false;
+    }
+  }
+
   // Mock messages - you can replace this with real Supabase messages later
+  useEffect(()=>{
+    getMessages()
+  },[]
+  )
+
+  const getMessages = async()=>{
+    const response = await axios.get(`http://localhost:8081/api/chat/${currentGroup.id}`)
+    const  messagesFromDB = response.data.message
+    console.log(messagesFromDB[0]) 
+  }
+
+  //------------------------------------------------------------------------------------
   const mockMessages: Message[] = [
     {
       id: 1,
@@ -141,6 +187,10 @@ const ChatPage = () => {
       isOwn: true
     }
   ];
+
+  useEffect(()=>{
+   // console.log(`The user is ${user.username} and is now in the Grp: ${currentGroup.name}and said `)
+  },[])
 
   useEffect(() => {
     const checkUserAndLoadGroups = async () => {
@@ -210,7 +260,7 @@ const ChatPage = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const sendMessage = (e: React.FormEvent) => {
+  const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim()) return;
 
@@ -223,6 +273,15 @@ const ChatPage = () => {
     };
 
     setMessages(prev => [...prev, newMessage]);
+    
+    // Send to database and handle any failures
+    const sent = await sendMessagetoDB();
+    if (!sent) {
+      // If failed to send, you could mark the message as failed in the UI
+      // This is optional, but provides better UX
+      console.log("Message failed to send to database");
+    }
+    
     setMessage('');
   };
 
@@ -444,3 +503,28 @@ const ChatPage = () => {
 };
 
 export default ChatPage;
+
+/**
+ * Example of using axios with proper CORS handling:
+ * 
+ * import React from 'react';
+ * import axios from 'axios';
+ * 
+ * function App() {
+ *   const handleClick = async () => {
+ *     try {
+ *       const response = await axios.post('http://localhost:8081/api/data', {
+ *         name: 'Kirran',
+ *         age: 21,
+ *       });
+ *       console.log('Response:', response.data);
+ *     } catch (error) {
+ *       console.error('Error:', error);
+ *     }
+ *   };
+ *
+ *   return <button onClick={handleClick}>Send</button>;
+ * }
+ * 
+ * export default App;
+ */

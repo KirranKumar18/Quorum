@@ -132,8 +132,8 @@ const LandingPage = () => {
         {/* Navigation */}
         <nav className={`p-6 transition-all duration-700 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}>
           <div className="max-w-7xl mx-auto flex justify-between items-center">
-            <div className="text-2xl font-bold bg-gradient-elegant bg-clip-text text-transparent">
-              GroupSpark
+            <div className="text-5xl font-bold bg-gradient-elegant bg-clip-text text-transparent">
+              Quorum
             </div>
             <div className="flex items-center gap-4">
               <Button 
@@ -166,8 +166,8 @@ const LandingPage = () => {
             {/* Main Heading with SplitText Animation */}
             <div className="space-y-4">
               <h1 className="text-6xl lg:text-8xl font-bold leading-tight">
-                <SplitText className="bg-gradient-elegant bg-clip-text text-transparent">
-                  GroupSpark
+                <SplitText className="bg-gradient-to-r from-white via-blue-200 to-purple-200 bg-clip-text text-transparent">
+                  Quorum
                 </SplitText>
               </h1>
               
@@ -218,7 +218,7 @@ const LandingPage = () => {
           }`}>
             <h2 className="text-4xl lg:text-5xl font-bold mb-4">
               <TextPressure className="bg-gradient-elegant bg-clip-text text-transparent">
-                Why Choose GroupSpark?
+                Why Choose Quorum?
               </TextPressure>
             </h2>
             <p className="text-xl text-muted-foreground">
