@@ -126,7 +126,7 @@ const ChatPage = () => {
     try {
       console.log(`Sending message - User: ${user.username}, Group: ${currentGroup.name}, Message: ${message}`);
       const response = await axios.post(`http://localhost:8081/api/chat/${currentGroup.id}`, {
-        Sender: user.username,
+        Sender: user.username, 
         Group: currentGroup.id,
         Message: message.trim()
       });
