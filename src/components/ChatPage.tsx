@@ -4,10 +4,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, Send, Users, MoreVertical } from 'lucide-react';
+import { ArrowLeft, Send, Users, MoreVertical, Copy } from 'lucide-react';
 import { supabase } from '../integrations/supabase/client.ts';
 import { toast } from "@/hooks/use-toast";
 import axios from 'axios';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
  
 interface Message {
   id: number;
@@ -16,10 +22,11 @@ interface Message {
   timestamp: string;
   isOwn: boolean;
 }
-interface messageS{
+interface messageS {
   Sender: string;
-  Group: String;
-  Message:String;
+  Group: string;
+  Message: string;
+  timestamp?: string; // Add timestamp if it exists in the response
 }
  
 interface Group {
@@ -36,7 +43,6 @@ const ChatPage = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);                                // the Sender[messageS]
   const [message, setMessage] = useState('');
-  const [msgFromDB,setmsgFromDB] =useState<messageS[]>([])
   const [messages, setMessages] = useState<Message[]>([]);
   const [userGroups, setUserGroups] = useState<Group[]>([]);
   const [currentGroup, setCurrentGroup] = useState<Group | null>(null);       // load this chats and the Group[messageS]
@@ -144,53 +150,59 @@ const ChatPage = () => {
     }
   }
 
-  // Mock messages - you can replace this with real Supabase messages later
-  useEffect(()=>{
-    getMessages()
-  },[]
-  )
-
-  const getMessages = async()=>{
-    const response = await axios.get(`http://localhost:8081/api/chat/${currentGroup.id}`)
-    const  messagesFromDB = response.data.message
-    console.log(messagesFromDB[0]) 
-  }
-
-  //------------------------------------------------------------------------------------
-  const mockMessages: Message[] = [
-    {
-      id: 1,
-      username: "alex_dev",
-      content: "Hey everyone! Just finished implementing the new component library. What do you think about the new design tokens?",
-      timestamp: "2:30 PM",
-      isOwn: false
-    },
-    {
-      id: 2,
-      username: "sarah_ui",
-      content: "Looks amazing! The consistency across components is much better now. Great work! 🎉",
-      timestamp: "2:32 PM",
-      isOwn: false
-    },
-    {
-      id: 3,
-      username: "mike_frontend",
-      content: "I love how the animations feel so smooth. Did you use Framer Motion for this?",
-      timestamp: "2:35 PM",
-      isOwn: false
-    },
-    {
-      id: 4,
-      username: user?.username || "you",
-      content: "This is exactly what we needed! The developer experience is so much better.",
-      timestamp: "2:38 PM",
-      isOwn: true
+  // Fixed getMessages function with proper error handling
+  useEffect(() => {
+    setMessage('')
+    if (currentGroup) {
+      getMessages();
     }
-  ];
+  }, [currentGroup]);
 
-  useEffect(()=>{
-   // console.log(`The user is ${user.username} and is now in the Grp: ${currentGroup.name}and said `)
-  },[])
+  const getMessages = async() => {
+    if (!currentGroup) {
+      console.log("No group selected yet, skipping message fetch");
+      return;
+    }
+    
+    try {
+      
+      const response = await axios.get(`http://localhost:8081/api/chat/${currentGroup.id}`);
+      
+      // Check if response contains messages
+      if (response.data && response.data.message) {
+        const messagesFromDB = response.data.message;
+        console.log("Messages fetched:", messagesFromDB);
+        
+        if (Array.isArray(messagesFromDB) && messagesFromDB.length > 0) {
+          // Convert DB messages to the Message format used by the UI
+          const formattedMessages: Message[] = messagesFromDB.map((msg, index) => {
+            return {
+              id: index + 1, // Generate IDs based on array index
+              username: msg.Sender,
+              content: msg.Message,
+              timestamp: msg.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              isOwn: msg.Sender === user?.username
+            };
+          });
+          
+          // Update the messages state with data from DB
+          setMessages(formattedMessages);
+          console.log("Messages updated with DB data");
+        } else {
+          console.log("No messages found or empty array returned");
+          setMessage('')
+        }
+      }
+     
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load messages for this group.",
+        variant: "destructive",
+      });
+    }
+  };
 
   useEffect(() => {
     const checkUserAndLoadGroups = async () => {
@@ -238,16 +250,6 @@ const ChatPage = () => {
   }, [groupId, userGroups]);
 
   useEffect(() => {
-    // Update messages when user changes
-    if (user) {
-      setMessages(mockMessages.map(msg => ({
-        ...msg,
-        isOwn: msg.username === user.username
-      })));
-    }
-  }, [user]);
-
-  useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
@@ -272,17 +274,32 @@ const ChatPage = () => {
       isOwn: true
     };
 
+    // Add the message to the UI immediately for responsive feel
     setMessages(prev => [...prev, newMessage]);
     
-    // Send to database and handle any failures
+    // Send to database
     const sent = await sendMessagetoDB();
     if (!sent) {
-      // If failed to send, you could mark the message as failed in the UI
-      // This is optional, but provides better UX
       console.log("Message failed to send to database");
+      // You could mark the message as failed in the UI
+      // Optionally fetch messages again to ensure UI is in sync with DB
+    } else {
+      // Optionally refresh messages to get any additional data from DB
+      // getMessages();
     }
     
     setMessage('');
+  };
+
+  const copyGroupId = () => {
+    if (currentGroup?.id) {
+      navigator.clipboard.writeText(currentGroup.id);
+      toast({
+        title: "Copied!",
+        description: "Group ID copied to clipboard",
+        variant: "default",
+      });
+    }
   };
 
   if (loading || !user) {
@@ -409,13 +426,44 @@ const ChatPage = () => {
               )}
             </div>
             
-            <Button 
-              variant="outline" 
-              size="sm"
-              className="bg-gray-800/50 backdrop-blur-sm border-blue-500/20 hover:bg-purple-500/100 text-white hover:text-white"
-            >
-              <MoreVertical className="w-4 h-4" />
-            </Button>
+            {currentGroup && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="bg-gray-800/50 backdrop-blur-sm border-blue-500/20 hover:bg-purple-500/100 text-white hover:text-white"
+                  >
+                    <MoreVertical className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="bg-gray-800 border-gray-700 text-white">
+                  <DropdownMenuItem 
+                    className="flex items-center hover:bg-gray-700 cursor-pointer"
+                    onClick={copyGroupId}
+                  >
+                    <Copy className="w-4 h-4 mr-2" />
+                    <div>
+                      <div className="text-sm">Group ID</div>
+                      <div className="text-xs text-gray-400 max-w-xs truncate">
+                        {currentGroup.id}
+                      </div>
+                    </div>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            
+            {!currentGroup && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="bg-gray-800/50 backdrop-blur-sm border-blue-500/20 hover:bg-purple-500/100 text-white hover:text-white"
+                disabled
+              >
+                <MoreVertical className="w-4 h-4" />
+              </Button>
+            )}
           </div>
         </header>
 
@@ -429,6 +477,17 @@ const ChatPage = () => {
                 </h3>
                 <p className="text-gray-400">
                   Choose a group from the sidebar to view messages and participate in conversations.
+                </p>
+              </div>
+            </div>
+          ) : messages.length === 0 ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <h3 className="text-xl font-semibold text-gray-300 mb-2">
+                  No messages yet
+                </h3>
+                <p className="text-gray-400">
+                  Be the first to send a message in this group!
                 </p>
               </div>
             </div>

@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MessageCircle, Users, Plus, User, Crown, Zap,Settings,Home,Bell,Search,Sparkles,Shield,Calendar,Activity} from 'lucide-react';
+import { MessageCircle, Users, Plus, User, Crown, Zap,Settings,Home,Bell,Search,Sparkles,Shield,Calendar,Activity, LogOut, Cpu} from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
 import { Navigate } from 'react-router-dom';
 
@@ -226,6 +226,10 @@ const DashboardPage = () => {
     }
   };
 
+  const handleJoinGroup = ()=>{
+    
+  }
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate('/');
@@ -299,7 +303,7 @@ const DashboardPage = () => {
                 <span className="ml-2">👋</span>
               </h2>
               <p className="text-gray-300 text-lg">
-                Ready to spark some conversations?
+                Ready to spark some conversations Presidency !!
               </p>
             </div>
           </div>
@@ -355,22 +359,19 @@ const DashboardPage = () => {
             </CardContent>
           </Card>
 
-          <Card className="bg-gray-800/30 backdrop-blur-lg border-gray-700/30 shadow-xl hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300">
+          <Card className="bg-gray-800/30 backdrop-blur-lg border-gray-700/30 shadow-xl hover:shadow-2xl hover:shadow-yellow-500/100 transition-all duration-300">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-gray-300 flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
-                Member Since
+                <Cpu className="w-4 h-4" />
+                Developed by
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-sm font-bold text-white">
-                {profile ? new Date(profile.id).toLocaleDateString('en-US', { 
-                  month: 'short', 
-                  year: 'numeric' 
-                }) : 'Unknown'}
+                K K
               </div>
               <div className="text-xs text-gray-400 mt-1">
-                Quorum user
+                Quorum Developer
               </div>
             </CardContent>
           </Card>
@@ -381,70 +382,111 @@ const DashboardPage = () => {
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-3xl font-bold text-white">Your Groups</h3>
             
-            <Dialog open={createGroupOpen} onOpenChange={setCreateGroupOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-300 hover:scale-105">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Make Group
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-gray-800/95 backdrop-blur-xl border-gray-700/30 text-white">
-                <DialogHeader>
-                  <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                    Create New Group
-                  </DialogTitle>
-                  <DialogDescription className="text-gray-300">
-                    Start a new community and invite others to join the conversation.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="name">Group Name</Label>
-                    <Input
-                      id="name"
-                      value={newGroup.name}
-                      onChange={(e) => setNewGroup({ ...newGroup, name: e.target.value })}
-                      placeholder="Enter group name"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      value={newGroup.description}
-                      onChange={(e) => setNewGroup({ ...newGroup, description: e.target.value })}
-                      placeholder="What's this group about?"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="type">Group Type</Label>
-                    <Select
-                      value={newGroup.group_type}
-                      onValueChange={(value: 'custom' | 'class') => setNewGroup({ ...newGroup, group_type: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select group type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="custom" disabled={!canJoinCustom}>
-                          Custom Group {!canJoinCustom && '(Limit reached: 2/2)'}
-                        </SelectItem>
-                        <SelectItem value="class" disabled={!canJoinClass}>
-                          Class Group {!canJoinClass && '(Limit reached: 1/1)'}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Button 
-                    onClick={handleCreateGroup} 
-                    className="w-full bg-gradient-primary text-white"
-                    disabled={!newGroup.name.trim() || (!canJoinCustom && newGroup.group_type === 'custom') || (!canJoinClass && newGroup.group_type === 'class')}
+            <div className="flex space-x-3">
+              {/* Join Group Button */}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button className="bg-gradient-to-r from-green-500 to-teal-500 text-white hover:shadow-lg hover:shadow-green-500/25 transition-all duration-300 hover:scale-105"
+                  onClick={handleJoinGroup}
                   >
-                    Create Group
+                    <Users className="w-4 h-4 mr-2" />
+                    Join Group
                   </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+                </DialogTrigger>
+                <DialogContent className="bg-gray-800/95 backdrop-blur-xl border-gray-700/30 text-white">
+                  <DialogHeader>
+                    <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-green-400 to-teal-400 bg-clip-text text-transparent">
+                      Join Existing Group
+                    </DialogTitle>
+                    <DialogDescription className="text-gray-300">
+                      Enter the group ID to join an existing conversation.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="groupId">Group ID</Label>
+                      <Input
+                        id="groupId"
+                        className="bg-white text-purple-600 placeholder:text-gray-400"
+                        placeholder="Enter the group ID"
+                      />
+                    </div>
+                    <Button 
+                      className="w-full bg-gradient-to-r from-green-500 to-teal-500 text-white"
+                    >
+                      Join Group
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              {/* Create Group Button */}
+              <Dialog open={createGroupOpen} onOpenChange={setCreateGroupOpen}>
+                <DialogTrigger asChild>
+                  <Button className="bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-300 hover:scale-105">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Make Group
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="bg-gray-800/95 backdrop-blur-xl border-gray-700/30 text-white">
+                  <DialogHeader>
+                    <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                      Create New Group
+                    </DialogTitle>
+                    <DialogDescription className="text-gray-300">
+                      Start a new community and invite others to join the conversation.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="name">Group Name</Label>
+                      <Input
+                        id="name"
+                        value={newGroup.name}
+                        onChange={(e) => setNewGroup({ ...newGroup, name: e.target.value })}
+                        placeholder="Enter group name"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="description">Description</Label>
+                      <Textarea
+                        id="description"
+                        value={newGroup.description}
+                        onChange={(e) => setNewGroup({ ...newGroup, description: e.target.value })}
+                        placeholder="What's this group about?"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="type">Group Type</Label>
+                      <Select
+                        value={newGroup.group_type}
+                        onValueChange={(value: 'custom' | 'class') => setNewGroup({ ...newGroup, group_type: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select group type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="custom" disabled={!canJoinCustom}>
+                            Custom Group {!canJoinCustom && '(Limit reached: 2/2)'}
+                          </SelectItem>
+                          <SelectItem value="class" disabled={!canJoinClass}>
+                            Class Group {!canJoinClass && '(Limit reached: 1/1)'}
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <Button 
+                      onClick={handleCreateGroup} 
+                      className="w-full bg-gradient-primary text-white"
+                      disabled={!newGroup.name.trim() || (!canJoinCustom && newGroup.group_type === 'custom') || (!canJoinClass && newGroup.group_type === 'class')}
+                    >
+                      Create Group
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
 
           {/* Group Limits Info */}
@@ -565,9 +607,9 @@ const DashboardPage = () => {
           }
         }} />
         <DockItem icon={User} label="Profile" onClick={() => navigate('/profile')} />
-        <DockItem icon={Search} label="Discover" onClick={() => navigate('/trial')} />
+        <DockItem icon={Search} label="Discover" onClick={() => window.open("https://www.youtube.com/shorts/SXHMnicI6Pg")} />
         
-        <DockItem icon={Settings} label="Settings" onClick={handleLogout} />
+        <DockItem icon={LogOut} label="Log Out" onClick={handleLogout} />
       </Dock>
     </div>
   );
