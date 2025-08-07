@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MessageCircle, Users, Plus, User, Crown, Zap,Settings,Home,Bell,Search,Sparkles,Shield,Calendar,Activity, LogOut, Cpu} from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
-import { Navigate } from 'react-router-dom';
+
 
 interface Profile {
   id: string;
@@ -97,6 +97,7 @@ const DashboardPage = () => {
   const [groups, setGroups] = useState<GroupMembership[]>([]);
   const [loading, setLoading] = useState(true);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [groupId, setGroupId] = useState('')
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
   const [newGroup, setNewGroup] = useState({
     name: '',
@@ -226,9 +227,34 @@ const DashboardPage = () => {
     }
   };
 
-  const handleJoinGroup = ()=>{
+  const handleJoinGroup = async() => {
+   // console.log(groupId)
+   
+   const{data:{user}} = await supabase.auth.getUser()
+   if(!user) return;
+    const {data:{id}, error} = await supabase.from('groups').select('id').eq("id",groupId).limit(1).single()
+    if(error || id.length===0 || !id){
+      console.log("there was an eror ",error)
+    }
+    if(id){
+    //  console.log("the GROUP EXISTS ",id)
+      const {data, error} = await supabase.from('group_memberships')
+      .insert([{
+        "user_id": user.id,
+        "group_id": id
+      }
+      ]);
+      checkUserAndLoadData()
+      if(error){
+        console.log("THERE IS AN ERROR JOINING THE GRP", error)
+      }
+       
+    }
     
+
   }
+
+
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -387,7 +413,7 @@ const DashboardPage = () => {
               <Dialog>
                 <DialogTrigger asChild>
                   <Button className="bg-gradient-to-r from-green-500 to-teal-500 text-white hover:shadow-lg hover:shadow-green-500/25 transition-all duration-300 hover:scale-105"
-                  onClick={handleJoinGroup}
+                 
                   >
                     <Users className="w-4 h-4 mr-2" />
                     Join Group
@@ -409,12 +435,16 @@ const DashboardPage = () => {
                         id="groupId"
                         className="bg-white text-purple-600 placeholder:text-gray-400"
                         placeholder="Enter the group ID"
+                        value={groupId}
+                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => setGroupId(event.target.value)}
+                        
                       />
                     </div>
                     <Button 
                       className="w-full bg-gradient-to-r from-green-500 to-teal-500 text-white"
+                      onClick={handleJoinGroup} 
                     >
-                      Join Group
+                      Join The Group
                     </Button>
                   </div>
                 </DialogContent>
