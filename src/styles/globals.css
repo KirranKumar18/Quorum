@@ -1,0 +1,15 @@
+/* ...existing code... */
+
+/* Style for inputs in modals */
+.modal-dialog input,
+.modal-dialog textarea,
+.modal-dialog select {
+  color: rgb(126, 58, 242) !important; /* Purple text */
+}
+
+.modal-dialog input::placeholder,
+.modal-dialog textarea::placeholder {
+  color: rgb(156, 163, 175) !important; /* Gray placeholder */
+}
+
+/* ...existing code... */
