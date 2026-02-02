@@ -1,295 +1,506 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { MessageCircle, Users, Zap, Sparkles, Shield, Crown } from 'lucide-react';
+import { ArrowRight, ChevronDown, Code, Heart, Sparkles } from 'lucide-react';
+
+// Custom hook for scroll animations
+const useScrollAnimation = () => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+        }
+      },
+      { threshold: 0.1, rootMargin: '-50px' }
+    );
+
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  return { ref, isVisible };
+};
+
+// Interactive particle type
+interface Particle {
+  id: number;
+  x: number;
+  y: number;
+  baseX: number;
+  baseY: number;
+  size: number;
+  opacity: number;
+  speed: number;
+}
+
+// Interactive Background Component
+const InteractiveBackground = ({ mousePosition }: { mousePosition: { x: number; y: number } }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const particlesRef = useRef<Particle[]>([]);
+  const animationRef = useRef<number>();
+  const mouseRef = useRef({ x: 0, y: 0 });
+
+  // Initialize particles
+  useEffect(() => {
+    const particles: Particle[] = [];
+    const numParticles = 80;
+    
+    for (let i = 0; i < numParticles; i++) {
+      const x = Math.random() * window.innerWidth;
+      const y = Math.random() * window.innerHeight;
+      particles.push({
+        id: i,
+        x,
+        y,
+        baseX: x,
+        baseY: y,
+        size: Math.random() * 2 + 1,
+        opacity: Math.random() * 0.5 + 0.1,
+        speed: Math.random() * 0.5 + 0.2
+      });
+    }
+    particlesRef.current = particles;
+  }, []);
+
+  // Update mouse position ref
+  useEffect(() => {
+    mouseRef.current = {
+      x: (mousePosition.x / 20 + 0.5) * window.innerWidth,
+      y: (mousePosition.y / 20 + 0.5) * window.innerHeight
+    };
+  }, [mousePosition]);
+
+  // Animation loop
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const resizeCanvas = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      const mouse = mouseRef.current;
+      const particles = particlesRef.current;
+
+      // Draw connections between nearby particles
+      ctx.strokeStyle = 'rgba(99, 102, 241, 0.1)';
+      ctx.lineWidth = 0.5;
+      
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          
+          if (distance < 150) {
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.globalAlpha = (1 - distance / 150) * 0.3;
+            ctx.stroke();
+          }
+        }
+      }
+
+      // Update and draw particles
+      particles.forEach((particle) => {
+        // Mouse interaction - particles move away from cursor
+        const dx = mouse.x - particle.x;
+        const dy = mouse.y - particle.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const maxDistance = 200;
+
+        if (distance < maxDistance) {
+          const force = (maxDistance - distance) / maxDistance;
+          const angle = Math.atan2(dy, dx);
+          particle.x -= Math.cos(angle) * force * 3;
+          particle.y -= Math.sin(angle) * force * 3;
+        }
+
+        // Return to base position slowly
+        particle.x += (particle.baseX - particle.x) * 0.02;
+        particle.y += (particle.baseY - particle.y) * 0.02;
+
+        // Gentle floating motion
+        particle.x += Math.sin(Date.now() * 0.001 * particle.speed + particle.id) * 0.3;
+        particle.y += Math.cos(Date.now() * 0.001 * particle.speed + particle.id) * 0.3;
+
+        // Draw particle
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(139, 92, 246, ${particle.opacity})`;
+        ctx.globalAlpha = 1;
+        ctx.fill();
+
+        // Draw glow for larger particles
+        if (particle.size > 1.5) {
+          ctx.beginPath();
+          ctx.arc(particle.x, particle.y, particle.size * 3, 0, Math.PI * 2);
+          const gradient = ctx.createRadialGradient(
+            particle.x, particle.y, 0,
+            particle.x, particle.y, particle.size * 3
+          );
+          gradient.addColorStop(0, `rgba(99, 102, 241, ${particle.opacity * 0.3})`);
+          gradient.addColorStop(1, 'rgba(99, 102, 241, 0)');
+          ctx.fillStyle = gradient;
+          ctx.fill();
+        }
+      });
+
+      // Draw mouse glow
+      const glowGradient = ctx.createRadialGradient(
+        mouse.x, mouse.y, 0,
+        mouse.x, mouse.y, 200
+      );
+      glowGradient.addColorStop(0, 'rgba(99, 102, 241, 0.15)');
+      glowGradient.addColorStop(0.5, 'rgba(139, 92, 246, 0.05)');
+      glowGradient.addColorStop(1, 'rgba(99, 102, 241, 0)');
+      ctx.fillStyle = glowGradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      animationRef.current = requestAnimationFrame(animate);
+    };
+
+    animate();
+
+    return () => {
+      window.removeEventListener('resize', resizeCanvas);
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="fixed inset-0 pointer-events-none"
+      style={{ zIndex: 0 }}
+    />
+  );
+};
 
 const LandingPage = () => {
   const navigate = useNavigate();
   const [isLoaded, setIsLoaded] = useState(false);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+
+  // Scroll animation refs
+  const aboutSection = useScrollAnimation();
+  const creatorSection = useScrollAnimation();
 
   useEffect(() => {
     const timer = setTimeout(() => setIsLoaded(true), 100);
     return () => clearTimeout(timer);
   }, []);
 
-  const features = [
-    {
-      icon: Users,
-      title: "Group-Only Focus",
-      description: "Connect with communities, not individuals. Pure group energy.",
-      gradient: "from-primary to-accent"
-    },
-    {
-      icon: MessageCircle,
-      title: "Real-time Chat",
-      description: "Instant messaging with buttery smooth animations and effects.",
-      gradient: "from-accent to-primary"
-    },
-    {
-      icon: Zap,
-      title: "Lightning Fast",
-      description: "Built for speed with beautiful interactions and dark aesthetics.",
-      gradient: "from-primary to-accent"
-    }
-  ];
+  // Mouse parallax effect
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePosition({
+        x: (e.clientX / window.innerWidth - 0.5) * 20,
+        y: (e.clientY / window.innerHeight - 0.5) * 20,
+      });
+    };
 
-  // Split text animation component
-  const SplitText = ({ children, className = "", delay = 0 }: { children: string; className?: string; delay?: number }) => {
-    const letters = children.split('');
-    
-    return (
-      <span className={className}>
-        {letters.map((letter, index) => (
-          <span
-            key={index}
-            className={`inline-block transition-all duration-700 ${
-              isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-            }`}
-            style={{ 
-              transitionDelay: `${delay + index * 50}ms`,
-              animationDelay: `${delay + index * 50}ms`
-            }}
-          >
-            {letter === ' ' ? '\u00A0' : letter}
-          </span>
-        ))}
-      </span>
-    );
-  };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
 
-  // Text pressure effect component
-  const TextPressure = ({ children, className = "" }: { children: string; className?: string }) => {
-    return (
-      <span 
-        className={`${className} transition-all duration-500 hover:scale-105 hover:tracking-wider cursor-default`}
-      >
-        {children}
-      </span>
-    );
+  const scrollToAbout = () => {
+    document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-background">
-      {/* Iridescence Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-background via-background/95 to-primary/5">
-        {/* Main iridescent gradients */}
-        <div className="absolute inset-0">
-          <div 
-            className="absolute top-0 left-0 w-full h-full opacity-30"
-            style={{
-              background: `
-                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.15) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 40% 40%, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 60% 60%, rgba(255, 255, 255, 0.05) 0%, transparent 50%)
-              `
-            }}
-          />
-        </div>
-        
-        {/* Floating orbs */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div 
-            className="absolute top-20 left-20 w-64 h-64 opacity-20 animate-float"
-            style={{
-              background: 'radial-gradient(circle, rgba(120, 119, 198, 0.4) 0%, rgba(120, 119, 198, 0.1) 50%, transparent 100%)',
-              filter: 'blur(40px)',
-            }}
-          />
-          <div 
-            className="absolute top-60 right-32 w-48 h-48 opacity-25 animate-float"
-            style={{
-              background: 'radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.1) 50%, transparent 100%)',
-              filter: 'blur(30px)',
-              animationDelay: '2s'
-            }}
-          />
-          <div 
-            className="absolute bottom-32 left-1/3 w-80 h-80 opacity-15 animate-float"
-            style={{
-              background: 'radial-gradient(circle, rgba(120, 119, 198, 0.3) 0%, rgba(120, 119, 198, 0.1) 50%, transparent 100%)',
-              filter: 'blur(50px)',
-              animationDelay: '4s'
-            }}
-          />
-        </div>
-
-        {/* Mesh gradient overlay */}
-        <div 
-          className="absolute inset-0 opacity-10"
-          style={{
-            backgroundImage: `
-              linear-gradient(45deg, transparent 25%, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.1) 50%, transparent 50%, transparent 75%, rgba(255,255,255,0.1) 75%),
-              linear-gradient(-45deg, transparent 25%, rgba(120,119,198,0.1) 25%, rgba(120,119,198,0.1) 50%, transparent 50%, transparent 75%, rgba(120,119,198,0.1) 75%)
-            `,
-            backgroundSize: '60px 60px'
-          }}
-        />
+    <div className="min-h-screen bg-[#0a0a0b] text-white overflow-x-hidden">
+      {/* Interactive particle background */}
+      <InteractiveBackground mousePosition={mousePosition} />
+      
+      {/* Gradient overlays */}
+      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 1 }}>
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0b] via-transparent to-[#0a0a0b] opacity-60" />
+        <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-[#0a0a0b] to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0a0a0b] to-transparent" />
       </div>
 
-      {/* Content */}
-      <div className="relative z-10">
-        {/* Navigation */}
-        <nav className={`p-6 transition-all duration-700 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}>
-          <div className="max-w-7xl mx-auto flex justify-between items-center">
-            <div className="text-5xl font-bold bg-gradient-elegant bg-clip-text text-transparent">
-              Quorum
-            </div>
-            <div className="flex items-center gap-4">
-              <Button 
-                variant="ghost" 
-                className="text-foreground hover:bg-primary/10 border border-primary/20 backdrop-blur-sm"
-                onClick={() => navigate('/login')}
-              >
-                Sign In
-              </Button>
-              <Button 
-                className="bg-gradient-primary text-white hover:shadow-glow transition-all duration-300"
-                onClick={() => navigate('/signup')}
-              >
-                Sign Up
-              </Button>
-              <Button 
-                variant="outline"
-                className="border-accent/30 text-accent hover:bg-accent/10 backdrop-blur-sm"
-                onClick={() => navigate('/guest-chat')}
-              >
-                Guest Chat
-              </Button>
-            </div>
+      {/* Navigation */}
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-700 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`} style={{ zIndex: 50 }}>
+        <div className="max-w-6xl mx-auto px-6 py-6 flex justify-between items-center">
+          <div className="text-2xl font-semibold tracking-tight">
+            Quorum
           </div>
-        </nav>
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="ghost" 
+              className="text-white/70 hover:text-white hover:bg-white/5 text-sm"
+              onClick={() => navigate('/login')}
+            >
+              Sign In
+            </Button>
+            <Button 
+              className="bg-white text-black hover:bg-white/90 text-sm px-5 rounded-full"
+              onClick={() => navigate('/signup')}
+            >
+              Get Started
+            </Button>
+          </div>
+        </div>
+      </nav>
 
-        {/* Hero Section */}
-        <div className="max-w-7xl mx-auto px-6 pt-20 pb-32">
-          <div className="text-center space-y-8">
-            {/* Main Heading with SplitText Animation */}
-            <div className="space-y-4">
-              <h1 className="text-6xl lg:text-8xl font-bold leading-tight">
-                <SplitText className="bg-gradient-to-r from-white via-blue-200 to-purple-200 bg-clip-text text-transparent">
-                  Quorum
-                </SplitText>
-              </h1>
-              
-              <div className="text-2xl lg:text-4xl font-semibold">
-                <TextPressure className="text-foreground/80">
-                  Where Communities Come Alive
-                </TextPressure>
-              </div>
+      {/* Hero Section */}
+      <section className="min-h-screen flex flex-col justify-center items-center px-6 relative" style={{ zIndex: 10 }}>
+        <div className="max-w-4xl mx-auto text-center">
+          {/* Animated badge */}
+          <div 
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 bg-white/5 backdrop-blur-sm mb-8 transition-all duration-1000 ${
+              isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+            }`}
+          >
+            <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+            <span className="text-sm text-white/60">Now in public beta</span>
+          </div>
+
+          {/* Main heading */}
+          <h1 
+            className={`text-5xl sm:text-7xl lg:text-8xl font-bold tracking-tight mb-6 transition-all duration-1000 delay-200 ${
+              isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+            }`}
+          >
+            <span className="block">Where groups</span>
+            <span className="block bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+              come alive
+            </span>
+          </h1>
+
+          {/* Subtitle */}
+          <p 
+            className={`text-lg sm:text-xl text-white/50 max-w-2xl mx-auto mb-12 leading-relaxed transition-all duration-1000 delay-400 ${
+              isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+            }`}
+          >
+            A minimalist space for meaningful group conversations. 
+            No noise, no distractions — just your community.
+          </p>
+
+          {/* CTA Buttons */}
+          <div 
+            className={`flex flex-col sm:flex-row gap-4 justify-center transition-all duration-1000 delay-600 ${
+              isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+            }`}
+          >
+            <Button 
+              size="lg"
+              className="bg-white text-black hover:bg-white/90 text-base px-8 py-6 rounded-full group"
+              onClick={() => navigate('/signup')}
+            >
+              Start for free
+              <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+            </Button>
+            <Button 
+              size="lg"
+              variant="outline" 
+              className="border-white/20 text-black hover:bg-white/5 text-base px-8 py-6 rounded-full"
+              onClick={() => navigate('/guest-chat')}
+            >
+              Try as guest
+            </Button>
+          </div>
+        </div>
+
+        {/* Scroll indicator */}
+        <button 
+          onClick={scrollToAbout}
+          className={`absolute bottom-12 left-1/2 -translate-x-1/2 text-white/30 hover:text-white/60 transition-all duration-1000 delay-1000 cursor-pointer ${
+            isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+          }`}
+        >
+          <ChevronDown className="w-6 h-6 animate-bounce" />
+        </button>
+      </section>
+
+      {/* About Quorum Section */}
+      <section id="about" className="py-32 px-6 relative" ref={aboutSection.ref} style={{ zIndex: 10 }}>
+        <div className="max-w-4xl mx-auto">
+          <div 
+            className={`transition-all duration-1000 ${
+              aboutSection.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
+            }`}
+          >
+            {/* Section badge */}
+            <div className="flex items-center gap-2 mb-8">
+              <Sparkles className="w-5 h-5 text-indigo-400" />
+              <span className="text-indigo-400 text-sm font-medium tracking-wider uppercase">About Quorum</span>
             </div>
             
-            {/* Subtitle with fade-in */}
-            <p className={`text-xl lg:text-2xl text-muted-foreground leading-relaxed max-w-4xl mx-auto transition-all duration-1000 delay-1000 ${
-              isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-            }`}>
-              Join vibrant communities and engage in meaningful conversations. 
-              Experience the power of group-focused chatting with stunning dark aesthetics and smooth animations.
-            </p>
-
-            {/* CTA Buttons */}
-            <div className={`flex flex-col sm:flex-row gap-6 justify-center pt-8 transition-all duration-1000 delay-1500 ${
-              isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-            }`}>
-              <Button 
-                size="lg"
-                className="bg-gradient-primary text-white hover:shadow-glow text-lg px-12 py-6 rounded-xl transition-all duration-300 hover:scale-105"
-                onClick={() => navigate('/signup')}
-              >
-                <Sparkles className="w-5 h-5 mr-2" />
-                Start Your Journey
-              </Button>
-              <Button 
-                size="lg"
-                variant="outline" 
-                className="border-primary/30 text-foreground hover:bg-primary/10 text-lg px-12 py-6 rounded-xl backdrop-blur-sm transition-all duration-300 hover:scale-105"
-                onClick={() => navigate('/guest-chat')}
-              >
-                <MessageCircle className="w-5 h-5 mr-2" />
-                Try Guest Chat
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Features Section */}
-        <div className="max-w-7xl mx-auto px-6 pb-20">
-          <div className={`text-center mb-16 transition-all duration-1000 delay-2000 ${
-            isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-          }`}>
-            <h2 className="text-4xl lg:text-5xl font-bold mb-4">
-              <TextPressure className="bg-gradient-elegant bg-clip-text text-transparent">
-                Why Choose Quorum?
-              </TextPressure>
+            {/* Main content */}
+            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-8 leading-tight">
+              A space built for
+              <span className="block bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+                real connections
+              </span>
             </h2>
-            <p className="text-xl text-muted-foreground">
-              Experience the future of group communication
-            </p>
-          </div>
+            
+            <div className="space-y-6 text-lg sm:text-xl text-white/60 leading-relaxed">
+              <p>
+                Quorum is a modern, real-time group chat platform designed with one philosophy in mind: 
+                <span className="text-white"> communities over individuals</span>. No DMs, no private messages — 
+                just pure, meaningful group conversations.
+              </p>
+              
+              <p>
+                Built with <span className="text-indigo-400">React</span>, <span className="text-purple-400">Socket.io</span>, 
+                and <span className="text-pink-400">Supabase</span>, Quorum delivers instant message delivery 
+                with a buttery-smooth experience. Every message arrives the moment it's sent, 
+                creating conversations that feel alive.
+              </p>
+              
+              <p>
+                The dark, minimalist interface isn't just aesthetic — it's intentional. 
+                Less visual noise means more focus on what matters: your community's conversations.
+              </p>
+            </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
-              <div 
-                key={feature.title}
-                className={`group relative bg-background/30 backdrop-blur-lg rounded-2xl p-8 border border-white/10 shadow-elegant hover:shadow-glow transition-all duration-700 hover:scale-105 ${
-                  isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-                }`}
-                style={{ transitionDelay: `${2500 + index * 200}ms` }}
-              >
-                {/* Feature icon with gradient background */}
-                <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${feature.gradient} p-4 mb-6 group-hover:scale-110 transition-transform duration-300`}>
-                  <feature.icon className="w-full h-full text-white" />
-                </div>
-                
-                <h3 className="text-2xl font-bold mb-4 text-foreground group-hover:text-primary transition-colors duration-300">
-                  {feature.title}
-                </h3>
-                
-                <p className="text-muted-foreground text-lg leading-relaxed">
-                  {feature.description}
-                </p>
-
-                {/* Hover effect gradient border */}
-                <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none`} />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Call to Action Section */}
-        <div className="max-w-4xl mx-auto px-6 pb-32 text-center">
-          <div className={`bg-background/30 backdrop-blur-lg rounded-3xl p-12 border border-white/10 shadow-elegant transition-all duration-1000 delay-3500 ${
-            isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-          }`}>
-            <Crown className="w-16 h-16 text-accent mx-auto mb-6" />
-            <h3 className="text-3xl lg:text-4xl font-bold mb-6">
-              <TextPressure className="bg-gradient-elegant bg-clip-text text-transparent">
-                Ready to Spark Connections?
-              </TextPressure>
-            </h3>
-            <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
-              Join thousands of users already experiencing the magic of group-focused communication.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button 
-                size="lg"
-                className="bg-gradient-primary text-white hover:shadow-glow text-lg px-10 py-4 rounded-xl transition-all duration-300 hover:scale-105"
-                onClick={() => navigate('/signup')}
-              >
-                <Shield className="w-5 h-5 mr-2" />
-                Create Account
-              </Button>
-              <Button 
-                size="lg"
-                variant="outline" 
-                className="border-primary/30 text-foreground hover:bg-primary/10 text-lg px-10 py-4 rounded-xl backdrop-blur-sm transition-all duration-300"
-                onClick={() => navigate('/login')}
-              >
-                Sign In
-              </Button>
+            {/* Tech stack pills */}
+            <div 
+              className={`flex flex-wrap gap-3 mt-12 transition-all duration-1000 delay-300 ${
+                aboutSection.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              }`}
+            >
+              {['React', 'TypeScript', 'Socket.io', 'Supabase', 'MongoDB', 'Tailwind CSS'].map((tech) => (
+                <span 
+                  key={tech}
+                  className="px-4 py-2 rounded-full border border-white/10 bg-white/5 text-white/60 text-sm"
+                >
+                  {tech}
+                </span>
+              ))}
             </div>
           </div>
         </div>
-      </div>
+      </section>
+
+      {/* About KK Section */}
+      <section className="py-32 px-6 relative" ref={creatorSection.ref} style={{ zIndex: 10 }}>
+        <div className="max-w-4xl mx-auto">
+          <div 
+            className={`transition-all duration-1000 ${
+              creatorSection.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
+            }`}
+          >
+            {/* Section badge */}
+            <div className="flex items-center gap-2 mb-8">
+              <Code className="w-5 h-5 text-purple-400" />
+              <span className="text-purple-400 text-sm font-medium tracking-wider uppercase">The Creator</span>
+            </div>
+            
+            {/* Main content */}
+            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-8 leading-tight">
+              Made by KK,
+              <span className="block bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                for KK
+              </span>
+            </h2>
+            
+            <div className="space-y-6 text-lg sm:text-xl text-white/60 leading-relaxed">
+              <p>
+                Hey, I'm <span className="text-white font-semibold">KK</span> — a developer who believes 
+                the best way to learn is to build something real. Quorum isn't just a project; 
+                it's a passion piece.
+              </p>
+              
+              <p>
+                I'm the kind of person who notices when real-time messaging isn't actually real-time, 
+                and won't rest until it's fixed. <span className="text-purple-400">Detail-oriented</span> to a fault, 
+                I obsess over the little things — smooth animations, clean code, and interfaces 
+                that just <span className="italic">feel</span> right.
+              </p>
+              
+              <p>
+                When I'm not debugging socket connections at midnight, you'll find me 
+                exploring new technologies, refining UI details pixel by pixel, and 
+                turning ideas into interactive experiences. I built Quorum because I wanted 
+                a chat platform that matched my standards — <span className="text-pink-400">minimal, fast, and beautiful</span>.
+              </p>
+              
+              <p className="flex items-center gap-2">
+                <Heart className="w-5 h-5 text-red-400 fill-red-400" />
+                <span className="text-white/40">Built with late nights and lots of coffee</span>
+              </p>
+            </div>
+
+            {/* Traits */}
+            <div 
+              className={`grid sm:grid-cols-3 gap-4 mt-12 transition-all duration-1000 delay-300 ${
+                creatorSection.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              }`}
+            >
+              {[
+                { label: 'Detail-Oriented', desc: 'Every pixel matters' },
+                { label: 'Problem Solver', desc: 'Bugs don\'t stand a chance' },
+                { label: 'Always Learning', desc: 'Growth never stops' }
+              ].map((trait) => (
+                <div 
+                  key={trait.label}
+                  className="p-6 rounded-2xl border border-white/5 bg-white/[0.02]"
+                >
+                  <div className="text-white font-semibold mb-1">{trait.label}</div>
+                  <div className="text-white/40 text-sm">{trait.desc}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="py-32 px-6 relative" style={{ zIndex: 10 }}>
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="text-4xl sm:text-5xl font-bold mb-6">
+            Ready to join?
+          </h2>
+          <p className="text-white/50 text-lg mb-10 max-w-xl mx-auto">
+            Experience what group chat should feel like.
+          </p>
+          <Button 
+            size="lg"
+            className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white text-base px-10 py-6 rounded-full group shadow-lg shadow-indigo-500/25"
+            onClick={() => navigate('/signup')}
+          >
+            Get Started
+            <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+          </Button>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-12 px-6 border-t border-white/5 relative" style={{ zIndex: 10 }}>
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="text-white/30 text-sm">
+            © 2026 Quorum. All rights reserved.
+          </div>
+          <div className="flex gap-6 text-white/30 text-sm">
+            <button className="hover:text-white/60 transition-colors">Privacy</button>
+            <button className="hover:text-white/60 transition-colors">Terms</button>
+            <button className="hover:text-white/60 transition-colors">Contact</button>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
