@@ -4,13 +4,55 @@ import { getChats, postChat } from "./controller/controller.js";
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
+import http from "http";
+import { Server } from "socket.io";
 
 // Load environment variables
 dotenv.config();
 
 // Initialize Express app and router
 const app = express();
+const server = http.createServer(app);
 const router = express.Router();
+
+// Initialize Socket.io
+const io = new Server(server, {
+  cors: {
+    origin: "*", // Allow all origins for development
+    methods: ["GET", "POST", "PUT", "DELETE"],
+  },
+});
+
+// Make io accessible to routes
+app.set("io", io);
+
+// Socket.io connection logic
+io.on("connection", (socket) => {
+  console.log("✅ New client connected:", socket.id);
+
+  // Listen for newMessage events and broadcast to all clients
+  socket.on("newMessage", (message) => {
+    console.log("📨 New message received:", message);
+    // Broadcast to all clients INCLUDING the sender
+    io.emit("newMessage", message);
+  });
+
+  // Join a specific group room
+  socket.on("joinGroup", (groupId) => {
+    socket.join(groupId);
+    console.log(`👥 Socket ${socket.id} joined group: ${groupId}`);
+  });
+
+  // Leave a group room
+  socket.on("leaveGroup", (groupId) => {
+    socket.leave(groupId);
+    console.log(`👋 Socket ${socket.id} left group: ${groupId}`);
+  });
+
+  socket.on("disconnect", () => {
+    console.log("❌ Client disconnected:", socket.id);
+  });
+});
 
 // Middleware
 app.use(express.json());
@@ -19,7 +61,7 @@ app.use(
   cors({
     origin: "http://localhost:8080", // Allow only your frontend origin
     methods: ["GET", "POST", "PUT", "DELETE"], // Allowed HTTP methods
-  })
+  }),
 );
 
 // Mount router on the app
@@ -73,7 +115,7 @@ const connectDB = async () => {
 
     console.log("💡 Troubleshooting tips:");
     console.log(
-      "   1. Check MongoDB Atlas IP whitelist (add 0.0.0.0/0 for testing)"
+      "   1. Check MongoDB Atlas IP whitelist (add 0.0.0.0/0 for testing)",
     );
     console.log("   2. Verify username and password are correct");
     console.log("   3. Ensure cluster is running and accessible");
@@ -112,8 +154,8 @@ const startServer = async () => {
 
     // Start the server
     const PORT = process.env.PORT || 8081;
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
+    server.listen(PORT, () => {
+      console.log(`🚀 Server with Socket.io running on port ${PORT}`);
     });
   } catch (error) {
     console.error("Failed to start server:", error);

@@ -8,13 +8,22 @@ import { ArrowLeft, Send, Users, MoreVertical, Copy } from 'lucide-react';
 import { supabase } from '../integrations/supabase/client.ts';
 import { toast } from "@/hooks/use-toast";
 import axios from 'axios';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
+import { io, Socket } from 'socket.io-client';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
- 
+
+// Initialize socket connection outside component to prevent reconnections
+const socket: Socket = io("http://localhost:8081", {
+  transports: ['websocket', 'polling'],
+  reconnection: true,
+  reconnectionAttempts: 5,
+  reconnectionDelay: 1000,
+});
+
 interface Message {
   id: number;
   username: string;
@@ -28,7 +37,7 @@ interface messageS {
   Message: string;
   timestamp?: string; // Add timestamp if it exists in the response
 }
- 
+
 interface Group {
   id: string;
   name: string;
@@ -49,7 +58,7 @@ const ChatPage = () => {
   const [loading, setLoading] = useState(true);
   const [isLoaded, setIsLoaded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
+
 
   // Get user's groups from Supabase
   const fetchUserGroups = async (userId: string) => {
@@ -82,7 +91,7 @@ const ChatPage = () => {
         const groupsWithCounts = await Promise.all(
           data.map(async (item) => {
             const group = item.groups;
-            
+
             // Get member count for each group
             const { count } = await supabase
               .from('group_memberships')
@@ -101,7 +110,7 @@ const ChatPage = () => {
         );
 
         setUserGroups(groupsWithCounts);
-        
+
         // Set current group if groupId is provided
         if (groupId) {
           const current = groupsWithCounts.find(g => g.id === groupId);
@@ -123,20 +132,20 @@ const ChatPage = () => {
     }
   };
 
- async function sendMessagetoDB() {
+  async function sendMessagetoDB() {
     if (!user?.username || !currentGroup?.id || !message.trim()) {
       console.error("Missing required data to send message");
       return false;
     }
-    
+
     try {
       console.log(`Sending message - User: ${user.username}, Group: ${currentGroup.name}, Message: ${message}`);
       const response = await axios.post(`http://localhost:8081/api/chat/${currentGroup.id}`, {
-        Sender: user.username, 
+        Sender: user.username,
         Group: currentGroup.id,
         Message: message.trim()
       });
-      
+
       console.log("Message saved successfully:", response.data);
       return true;
     } catch (error) {
@@ -158,21 +167,21 @@ const ChatPage = () => {
     }
   }, [currentGroup]);
 
-  const getMessages = async() => {
+  const getMessages = async () => {
     if (!currentGroup) {
       console.log("No group selected yet, skipping message fetch");
       return;
     }
-    
+
     try {
-      
+
       const response = await axios.get(`http://localhost:8081/api/chat/${currentGroup.id}`);
-      
+
       // Check if response contains messages
       if (response.data && response.data.message) {
         const messagesFromDB = response.data.message;
         console.log("Messages fetched:", messagesFromDB);
-        
+
         if (Array.isArray(messagesFromDB) && messagesFromDB.length > 0) {
           // Convert DB messages to the Message format used by the UI
           const formattedMessages: Message[] = messagesFromDB.map((msg, index) => {
@@ -184,7 +193,7 @@ const ChatPage = () => {
               isOwn: msg.Sender === user?.username
             };
           });
-          
+
           // Update the messages state with data from DB
           setMessages(formattedMessages);
           console.log("Messages updated with DB data");
@@ -193,7 +202,7 @@ const ChatPage = () => {
           setMessage('')
         }
       }
-     
+
     } catch (error) {
       console.error("Error fetching messages:", error);
       toast({
@@ -208,7 +217,7 @@ const ChatPage = () => {
     const checkUserAndLoadGroups = async () => {
       try {
         const { data: { user: authUser } } = await supabase.auth.getUser();
-        
+
         if (!authUser) {
           navigate('/login');
           return;
@@ -249,6 +258,72 @@ const ChatPage = () => {
     }
   }, [groupId, userGroups]);
 
+  // Socket.io connection and message handling
+  useEffect(() => {
+    console.log("🔌 Socket connected status:", socket.connected);
+
+    const onConnect = () => {
+      console.log("✅ Socket connected successfully! ID:", socket.id);
+      if (currentGroup?.id) {
+        socket.emit("joinGroup", currentGroup.id);
+      }
+    };
+
+    const onDisconnect = (reason: string) => {
+      console.log("❌ Socket disconnected. Reason:", reason);
+    };
+
+    const onConnectError = (error: Error) => {
+      console.error("🚨 Socket connection error:", error.message);
+    };
+
+    const onNewMessage = (newMsg: { Grpid: string; Sender: string; Message: string; image?: string }) => {
+      console.log("📩 Received new message via socket:", newMsg);
+      // Only add messages for the currently selected group
+      if (newMsg.Grpid === currentGroup?.id) {
+        setMessages((prevMessages) => {
+          // Check if message already exists (to prevent duplicates)
+          const isDuplicate = prevMessages.some(
+            (msg) => 
+              msg.username === newMsg.Sender && 
+              msg.content === newMsg.Message
+          );
+          if (isDuplicate) {
+            console.log("⚠️ Duplicate message detected, skipping");
+            return prevMessages;
+          }
+          
+          const formattedMsg: Message = {
+            id: prevMessages.length + 1,
+            username: newMsg.Sender,
+            content: newMsg.Message,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            isOwn: newMsg.Sender === user?.username
+          };
+          return [...prevMessages, formattedMsg];
+        });
+      }
+    };
+
+    socket.on("connect", onConnect);
+    socket.on("disconnect", onDisconnect);
+    socket.on("connect_error", onConnectError);
+    socket.on("newMessage", onNewMessage);
+
+    // If already connected, join the group
+    if (socket.connected && currentGroup?.id) {
+      console.log("🔗 Already connected, joining group:", currentGroup.id);
+      socket.emit("joinGroup", currentGroup.id);
+    }
+
+    return () => {
+      socket.off("connect", onConnect);
+      socket.off("disconnect", onDisconnect);
+      socket.off("connect_error", onConnectError);
+      socket.off("newMessage", onNewMessage);
+    };
+  }, [currentGroup?.id, user?.username]);
+
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -264,31 +339,30 @@ const ChatPage = () => {
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim()) return;
+    if (!message.trim() || !currentGroup) return;
 
-    const newMessage: Message = {
-      id: messages.length + 1,
-      username: user.username,
-      content: message,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      isOwn: true
-    };
-
-    // Add the message to the UI immediately for responsive feel
-    setMessages(prev => [...prev, newMessage]);
+    const messageContent = message.trim();
     
+    // Clear input immediately for better UX
+    setMessage('');
+
     // Send to database
     const sent = await sendMessagetoDB();
     if (!sent) {
       console.log("Message failed to send to database");
-      // You could mark the message as failed in the UI
-      // Optionally fetch messages again to ensure UI is in sync with DB
-    } else {
-      // Optionally refresh messages to get any additional data from DB
-      // getMessages();
+      // Restore message if failed
+      setMessage(messageContent);
+      return;
     }
     
-    setMessage('');
+    // Emit via socket for real-time updates to other users
+    socket.emit("newMessage", {
+      Grpid: currentGroup.id,
+      Sender: user.username,
+      Message: messageContent,
+      image: ''
+    });
+    console.log("📤 Message emitted via socket");
   };
 
   const copyGroupId = () => {
@@ -321,7 +395,7 @@ const ChatPage = () => {
           <p className="text-gray-300 mb-6">
             You haven't joined any groups yet. Join a group to start chatting!
           </p>
-          <Button 
+          <Button
             onClick={() => navigate('/dashboard')}
             className="bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-300"
           >
@@ -353,20 +427,19 @@ const ChatPage = () => {
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Dashboard
           </Button>
-          
+
           <h2 className="text-xl font-bold text-white">Your Groups</h2>
         </div>
 
         {/* Groups List */}
         <div className={`flex-1 overflow-y-auto p-4 space-y-3 min-h-0 transition-all duration-700 delay-200 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           {userGroups.map((group) => (
-            <Card 
+            <Card
               key={group.id}
-              className={`cursor-pointer transition-all duration-300 shadow-xl hover:shadow-2xl ${
-                group.id === groupId 
-                  ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 border-blue-500/30 shadow-blue-500/30 shadow-glow' 
+              className={`cursor-pointer transition-all duration-300 shadow-xl hover:shadow-2xl ${group.id === groupId
+                  ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 border-blue-500/30 shadow-blue-500/30 shadow-glow'
                   : 'bg-gray-800/30 backdrop-blur-lg border-gray-700/30 hover:border-blue-500/20'
-              }`}
+                }`}
               onClick={() => navigate(`/chat/${group.id}`)}
             >
               <CardContent className="p-4">
@@ -383,11 +456,10 @@ const ChatPage = () => {
                   </p>
                 )}
                 <div className="flex items-center justify-between mt-2">
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    group.group_type === 'class' 
-                      ? group.id === groupId ? 'bg-blue-500/30 text-blue-200' : 'bg-blue-500/20 text-blue-300' 
+                  <span className={`text-xs px-2 py-1 rounded-full ${group.group_type === 'class'
+                      ? group.id === groupId ? 'bg-blue-500/30 text-blue-200' : 'bg-blue-500/20 text-blue-300'
                       : group.id === groupId ? 'bg-green-500/30 text-green-200' : 'bg-green-500/20 text-green-300'
-                  }`}>
+                    }`}>
                     {group.group_type === 'class' ? 'Class' : 'Custom'}
                   </span>
                   <span className={`text-xs ${group.id === groupId ? 'text-blue-200' : 'text-gray-400'}`}>
@@ -415,22 +487,21 @@ const ChatPage = () => {
                     <Users className="w-4 h-4 mr-1" />
                     {currentGroup.member_count.toLocaleString()} members
                   </p>
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    currentGroup.group_type === 'class' 
-                      ? 'bg-blue-500/20 text-blue-300' 
+                  <span className={`text-xs px-2 py-1 rounded-full ${currentGroup.group_type === 'class'
+                      ? 'bg-blue-500/20 text-blue-300'
                       : 'bg-green-500/20 text-green-300'
-                  }`}>
+                    }`}>
                     {currentGroup.group_type === 'class' ? 'Class Group' : 'Custom Group'}
                   </span>
                 </div>
               )}
             </div>
-            
+
             {currentGroup && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     className="bg-gray-800/50 backdrop-blur-sm border-blue-500/20 hover:bg-purple-500/100 text-white hover:text-white"
                   >
@@ -438,7 +509,7 @@ const ChatPage = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="bg-gray-800 border-gray-700 text-white">
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     className="flex items-center hover:bg-gray-700 cursor-pointer"
                     onClick={copyGroupId}
                   >
@@ -453,10 +524,10 @@ const ChatPage = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
-            
+
             {!currentGroup && (
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
                 className="bg-gray-800/50 backdrop-blur-sm border-blue-500/20 hover:bg-purple-500/100 text-white hover:text-white"
                 disabled
@@ -506,25 +577,23 @@ const ChatPage = () => {
                         </AvatarFallback>
                       </Avatar>
                     )}
-                    
+
                     <div className={`${msg.isOwn ? 'mr-3' : ''}`}>
                       {!msg.isOwn && (
                         <p className="text-xs text-gray-400 mb-1 ml-1">
                           {msg.username}
                         </p>
                       )}
-                      
+
                       <div
-                        className={`rounded-2xl px-4 py-3 ${
-                          msg.isOwn
+                        className={`rounded-2xl px-4 py-3 ${msg.isOwn
                             ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-glow'
                             : 'bg-gray-800/70 text-white border border-gray-700/30'
-                        }`}
+                          }`}
                       >
                         <p className="text-sm">{msg.content}</p>
-                        <p className={`text-xs mt-1 ${
-                          msg.isOwn ? 'text-white/70' : 'text-gray-400'
-                        }`}>
+                        <p className={`text-xs mt-1 ${msg.isOwn ? 'text-white/70' : 'text-gray-400'
+                          }`}>
                           {msg.timestamp}
                         </p>
                       </div>
@@ -547,8 +616,8 @@ const ChatPage = () => {
               className="flex-1 bg-gray-800/50 border-gray-700/30 text-white placeholder:text-gray-400"
               disabled={!currentGroup}
             />
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-300"
               disabled={!message.trim() || !currentGroup}
             >
