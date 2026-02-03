@@ -285,9 +285,9 @@ const UserProfilePage = () => {
 
           {/* Groups Sidebar */}
           <div className="space-y-6">
-            <Card className="bg-background/30 backdrop-blur-lg border-white/10 shadow-elegant">
+            <Card className="bg-gray-200 backdrop-blur-lg border-gray-300 shadow-elegant">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-black">
                   <Users className="w-5 h-5 text-primary" />
                   My Groups
                 </CardTitle>
@@ -311,11 +311,11 @@ const UserProfilePage = () => {
                     groups.map((membership) => (
                       <div 
                         key={membership.id}
-                        className="p-3 rounded-lg bg-background/40 border border-white/10 hover:bg-background/60 transition-all duration-300 cursor-pointer"
+                        className="p-3 rounded-lg bg-gray-100 border border-gray-200 hover:bg-purple-200 transition-all duration-300 cursor-pointer"
                         onClick={() => navigate(`/chat/${membership.group.id}`)}
                       >
                         <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-medium truncate">{membership.group.name}</h4>
+                          <h4 className="font-medium truncate text-black">{membership.group.name}</h4>
                           <Badge 
                             variant={membership.group.group_type === 'class' ? 'default' : 'secondary'}
                             className="text-xs"
@@ -324,7 +324,7 @@ const UserProfilePage = () => {
                           </Badge>
                         </div>
                         {membership.group.description && (
-                          <p className="text-xs text-muted-foreground truncate">
+                          <p className="text-xs text-gray-600 truncate">
                             {membership.group.description}
                           </p>
                         )}
@@ -336,9 +336,9 @@ const UserProfilePage = () => {
             </Card>
 
             {/* Achievements */}
-            <Card className="bg-background/30 backdrop-blur-lg border-white/10 shadow-elegant">
+            <Card className="bg-gray-200 backdrop-blur-lg border-gray-300 shadow-elegant">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-black">
                   <Crown className="w-5 h-5 text-accent" />
                   Achievements
                 </CardTitle>
@@ -346,31 +346,31 @@ const UserProfilePage = () => {
               <CardContent>
                 <div className="space-y-3">
                   {profile?.current_streak && profile.current_streak >= 3 && (
-                    <div className="flex items-center gap-3 p-2 rounded-lg bg-accent/10 border border-accent/20">
+                    <div className="flex items-center gap-3 p-2 rounded-lg bg-gray-100 border border-gray-200 hover:bg-purple-200 transition-all duration-300 cursor-pointer">
                       <span className="text-xl">✨</span>
                       <div>
-                        <div className="font-medium text-sm">Streak Starter</div>
-                        <div className="text-xs text-muted-foreground">3+ day streak</div>
+                        <div className="font-medium text-sm text-black">Streak Starter</div>
+                        <div className="text-xs text-gray-600">3+ day streak</div>
                       </div>
                     </div>
                   )}
                   
                   {profile?.current_streak && profile.current_streak >= 7 && (
-                    <div className="flex items-center gap-3 p-2 rounded-lg bg-primary/10 border border-primary/20">
+                    <div className="flex items-center gap-3 p-2 rounded-lg bg-gray-100 border border-gray-200 hover:bg-purple-200 transition-all duration-300 cursor-pointer">
                       <span className="text-xl">💫</span>
                       <div>
-                        <div className="font-medium text-sm">Week Warrior</div>
-                        <div className="text-xs text-muted-foreground">7+ day streak</div>
+                        <div className="font-medium text-sm text-black">Week Warrior</div>
+                        <div className="text-xs text-gray-600">7+ day streak</div>
                       </div>
                     </div>
                   )}
                   
                   {customGroups.length >= 2 && (
-                    <div className="flex items-center gap-3 p-2 rounded-lg bg-secondary/10 border border-secondary/20">
+                    <div className="flex items-center gap-3 p-2 rounded-lg bg-gray-100 border border-gray-200 hover:bg-purple-200 transition-all duration-300 cursor-pointer">
                       <span className="text-xl">🤝</span>
                       <div>
-                        <div className="font-medium text-sm">Group Master</div>
-                        <div className="text-xs text-muted-foreground">Joined 2 custom groups</div>
+                        <div className="font-medium text-sm text-black">Group Master</div>
+                        <div className="text-xs text-gray-600">Joined 2 custom groups</div>
                       </div>
                     </div>
                   )}

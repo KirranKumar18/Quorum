@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from '@/components/ui/button';
@@ -472,6 +472,7 @@ const DashboardPage = () => {
                       <Label htmlFor="name">Group Name</Label>
                       <Input
                         id="name"
+                        className="bg-white text-black placeholder:text-gray-400"
                         value={newGroup.name}
                         onChange={(e) => setNewGroup({ ...newGroup, name: e.target.value })}
                         placeholder="Enter group name"
@@ -481,6 +482,7 @@ const DashboardPage = () => {
                       <Label htmlFor="description">Description</Label>
                       <Textarea
                         id="description"
+                        className="bg-white text-black placeholder:text-gray-400"
                         value={newGroup.description}
                         onChange={(e) => setNewGroup({ ...newGroup, description: e.target.value })}
                         placeholder="What's this group about?"
@@ -492,10 +494,10 @@ const DashboardPage = () => {
                         value={newGroup.group_type}
                         onValueChange={(value: 'custom' | 'class') => setNewGroup({ ...newGroup, group_type: value })}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="bg-white text-black">
                           <SelectValue placeholder="Select group type" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-white text-black">
                           <SelectItem value="custom" disabled={!canJoinCustom}>
                             Custom Group {!canJoinCustom && '(Limit reached: 2/2)'}
                           </SelectItem>
@@ -521,12 +523,12 @@ const DashboardPage = () => {
 
           {/* Group Limits Info */}
           <div className="grid md:grid-cols-2 gap-4 mb-6">
-            <Card className="bg-background/20 backdrop-blur-sm border-primary/20">
+            <Card className="bg-white backdrop-blur-sm border-primary/20">
               <CardContent className="p-4">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-2">
                     <Users className="w-4 h-4 text-primary" />
-                    <span className="font-medium">Custom Groups</span>
+                    <span className="font-medium text-black">Custom Groups</span>
                   </div>
                   <Badge variant={canJoinCustom ? "default" : "secondary"}>
                     {customGroups.length}/2
@@ -535,14 +537,14 @@ const DashboardPage = () => {
               </CardContent>
             </Card>
             
-            <Card className="bg-background/20 backdrop-blur-sm border-accent/20">
+            <Card className="bg-white backdrop-blur-sm border-accent/20">
               <CardContent className="p-4">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-2">
                     <Crown className="w-4 h-4 text-accent" />
-                    <span className="font-medium">Class Groups</span>
+                    <span className="font-medium text-black">Class Groups</span>
                   </div>
-                  <Badge variant={canJoinClass ? "default" : "secondary"}>
+                  <Badge variant="default">
                     {classGroups.length}/1
                   </Badge>
                 </div>
@@ -637,7 +639,7 @@ const DashboardPage = () => {
           }
         }} />
         <DockItem icon={User} label="Profile" onClick={() => navigate('/profile')} />
-        <DockItem icon={Search} label="Discover" onClick={() => window.open("https://www.youtube.com/shorts/SXHMnicI6Pg")} />
+        <DockItem icon={Search} label="Discover" onClick={() => window.open("https://github.com/KirranKumar18")} />
         
         <DockItem icon={LogOut} label="Log Out" onClick={handleLogout} />
       </Dock>

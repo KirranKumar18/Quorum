@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, Send, Users, MoreVertical, Copy } from 'lucide-react';
+import { ArrowLeft, Send, Users, MoreVertical, Copy, LogOut } from 'lucide-react';
 import { supabase } from '../integrations/supabase/client.ts';
 import { toast } from "@/hooks/use-toast";
 import axios from 'axios';
@@ -376,6 +376,59 @@ const ChatPage = () => {
     }
   };
 
+  const leaveGroup = async () => {
+    if (!currentGroup?.id || !user?.user_id) {
+      toast({
+        title: "Error",
+        description: "Unable to leave group. Missing group or user information.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('group_memberships')
+        .delete()
+        .eq('group_id', currentGroup.id)
+        .eq('user_id', user.user_id);
+
+      if (error) {
+        console.error('Error leaving group:', error);
+        toast({
+          title: "Error",
+          description: "Failed to leave the group. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Left Group",
+        description: `You have successfully left "${currentGroup.name}"`,
+        variant: "default",
+      });
+
+      // Remove the group from the local state
+      const updatedGroups = userGroups.filter(g => g.id !== currentGroup.id);
+      setUserGroups(updatedGroups);
+
+      // Navigate to another group or dashboard
+      if (updatedGroups.length > 0) {
+        navigate(`/chat/${updatedGroups[0].id}`);
+      } else {
+        navigate('/dashboard');
+      }
+    } catch (error) {
+      console.error('Error in leaveGroup:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while leaving the group.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading || !user) {
     return (
       <div className="h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center overflow-hidden">
@@ -520,6 +573,13 @@ const ChatPage = () => {
                         {currentGroup.id}
                       </div>
                     </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="flex items-center hover:bg-red-600/50 cursor-pointer text-red-400 hover:text-red-300"
+                    onClick={leaveGroup}
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    <div className="text-sm">Leave Group</div>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
