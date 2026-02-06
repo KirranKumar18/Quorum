@@ -25,6 +25,29 @@ connectDB();
 
 app.use("/api", router);
 
+// ✅ Root route - Health check for Render and browser visits
+app.get("/", (req, res) => {
+  res.status(200).json({
+    status: "✅ Server is running!",
+    message: "Quorum Backend API",
+    endpoints: {
+      api: "/api",
+      health: "/health",
+      socket: "Socket.io connection available",
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// ✅ Health check endpoint (best practice for production)
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "healthy",
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+  });
+});
+
 //  socket.io logic
 io.on("connection", (socket) => {
   console.log("New client connected:", socket.id);
@@ -56,6 +79,10 @@ io.on("connection", (socket) => {
 // make io accessible to routes if needed
 app.set("io", io);
 
-server.listen(5000, () => {
-  console.log("Server with socket.io running on http://localhost:5000");
+// ✅ Use Render's PORT or fallback to 5000 for local development
+const PORT = process.env.PORT || 5000;
+
+server.listen(PORT, () => {
+  console.log(`✅ Server with Socket.io running on port ${PORT}`);
+  console.log(`🌐 Environment: ${process.env.NODE_ENV || "development"}`);
 });
